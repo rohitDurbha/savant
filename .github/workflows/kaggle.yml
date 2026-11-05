@@ -5,12 +5,13 @@ name: kaggle
 # KAGGLE_USERNAME and KAGGLE_TOKEN, from kaggle.com/settings under API. KAGGLE_TOKEN may
 # hold either a new API token (KGAT_...) or the key from a legacy kaggle.json.
 
-# Runs only when something under kaggle/ changes, so ordinary code pushes never spend
-# GPU quota. To start a run with the latest code, add a line to kaggle/RUNS.md.
+# Runs only when kaggle/RUN changes, so ordinary pushes never spend GPU quota. To start
+# a run with the latest code, write a new line into kaggle/RUN and record the run in
+# docs/kaggle-runs.md in the same commit.
 on:
   push:
     branches: [main]
-    paths: ["kaggle/**"]
+    paths: ["kaggle/RUN"]
 
 concurrency:
   group: kaggle
