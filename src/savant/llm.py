@@ -58,7 +58,7 @@ class Transformers:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        kwargs: dict = {"torch_dtype": torch.float16, "device_map": "auto"}
+        kwargs: dict = {"dtype": torch.float16, "device_map": "auto"}
         if load_in_4bit:
             from transformers import BitsAndBytesConfig
 
