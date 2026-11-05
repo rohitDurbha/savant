@@ -5,11 +5,12 @@ name: kaggle
 # KAGGLE_USERNAME and KAGGLE_TOKEN, from kaggle.com/settings under API. KAGGLE_TOKEN may
 # hold either a new API token (KGAT_...) or the key from a legacy kaggle.json.
 
+# Runs only when something under kaggle/ changes, so ordinary code pushes never spend
+# GPU quota. To start a run with the latest code, add a line to kaggle/RUNS.md.
 on:
   push:
     branches: [main]
-    paths: ["kaggle/**", "src/**", "pyproject.toml", ".github/workflows/kaggle.yml"]
-  workflow_dispatch:
+    paths: ["kaggle/**"]
 
 concurrency:
   group: kaggle

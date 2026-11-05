@@ -4,7 +4,7 @@ import polars as pl
 from savant.engine import Settings, analyze, split
 from savant.grade import grade
 from savant.ledger import Ledger, Test, false_discovery_control
-from savant.planted import make_task, shuffle_columns
+from savant.planted import make_task, plant, shuffle_columns
 from savant.profile import build_card
 
 FAST = Settings(stability_runs=20)
@@ -63,13 +63,6 @@ def test_small_file_has_no_confirmed_findings():
     assert res.reported == []
 
 
-def test_time_split_keeps_order():
-    task = make_task("t", 1000, 0, seed=1)
-    card = build_card(task.table)
-    explore, confirm = split(task.table, card, Settings())
-    assert explore["order_date"].max() <= confirm["order_date"].min()
-
-
 def test_shuffle_columns_keeps_values_and_breaks_pairs():
     task = make_task("p", 2000, 3, seed=7)
     shuffled = shuffle_columns(task.table, seed=1)
@@ -82,3 +75,21 @@ def test_functional_dependency_pairs_are_not_tested():
     card = build_card(df)
     assert ("city", "state") in card.dependencies
     assert analyze(df, FAST).ledger.tests == []
+
+
+def test_time_split_halves_both_cover_the_full_period():
+    task = make_task("t", 2000, 0, seed=1)
+    card = build_card(task.table)
+    explore, confirm = split(task.table, card, Settings())
+    dates = sorted(task.table["order_date"].to_list())
+    early, late = dates[len(dates) // 10], dates[9 * len(dates) // 10]
+    for part in (explore, confirm):
+        assert part["order_date"].min() <= early
+        assert part["order_date"].max() >= late
+
+
+def test_moderate_trend_is_confirmed():
+    base = make_task("t", 2000, 0, seed=4).table
+    df, p = plant(base, "trend", 0, 0.3, np.random.default_rng(4))
+    reported = {f.test.columns for f in analyze(df, FAST).reported}
+    assert p.columns in reported

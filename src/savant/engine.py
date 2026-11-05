@@ -32,6 +32,7 @@ class Settings:
     )
     min_support: float = 0.01
     explore_share: float = 0.5
+    time_blocks: int = 20
     min_rows_confirm: int = 500
     stability_runs: int = 100
     stability_keep: float = 0.8
@@ -69,13 +70,21 @@ class Analysis:
 def split(
     df: pl.DataFrame, card: DataCard, s: Settings
 ) -> tuple[pl.DataFrame, pl.DataFrame | None]:
-    """Exploration and confirmation rows, by time when the table has a time column."""
+    """Exploration and confirmation rows.
+
+    With a time column, rows are cut into contiguous time blocks and the blocks are dealt
+    evenly to the two parts. Nearby rows stay together, which limits leakage through
+    autocorrelation, while both parts still span the whole period. A plain before and
+    after split would halve the time range each part sees and hide real trends.
+    """
     if df.height < s.min_rows_confirm:
         return df, None
     cut = int(df.height * s.explore_share)
     if card.time_column:
         ordered = df.sort(card.time_column, nulls_last=True)
-        return ordered.head(cut), ordered.tail(df.height - cut)
+        block = np.arange(df.height) * s.time_blocks // df.height
+        explore_block = np.floor((block + 1) * s.explore_share) > np.floor(block * s.explore_share)
+        return ordered.filter(pl.Series(explore_block)), ordered.filter(pl.Series(~explore_block))
     idx = np.random.default_rng(s.seed).permutation(df.height)
     return df[idx[:cut].tolist()], df[idx[cut:].tolist()]
 
