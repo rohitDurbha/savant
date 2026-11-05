@@ -35,7 +35,7 @@ The engine is tuned on two kinds of generated tables. Null tables have no real r
 
 ## Training on Kaggle
 
-The `kaggle` workflow builds the package, writes the held-out bench tables, publishes both as a private Kaggle dataset and pushes the notebooks in `kaggle/notebooks`, which then run on a free GPU. It needs two repository secrets, `KAGGLE_USERNAME` and `KAGGLE_TOKEN`, which come from the API section of your Kaggle settings.
+The `kaggle` workflow builds the package, writes the held-out bench tables, publishes both as a private Kaggle dataset and pushes the notebooks in `kaggle/notebooks`, which then run on a free GPU. It needs two repository secrets, `KAGGLE_USERNAME` and `KAGGLE_TOKEN`, which come from the API section of your Kaggle settings. A run starts only when `kaggle/RUN` changes, so ordinary pushes never spend GPU quota, and every run is recorded in `docs/kaggle-runs.md`.
 
 ## Status
 
