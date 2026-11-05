@@ -56,6 +56,8 @@ jobs:
           pip wheel -q . --no-deps -w kaggle/bench
           # Seed 20261105 is the held-out bench. Tuning uses other seeds only.
           savant plant kaggle/bench/tasks --null 50 --planted 50 --rows 2000 --seed 20261105
+          echo "${GITHUB_SHA}" > kaggle/bench/BUILD
+          sed -i "s/EXPECTED_BUILD/${GITHUB_SHA}/g" kaggle/notebooks/*/notebook.ipynb
           sed -i "s/KAGGLE_USERNAME/${KAGGLE_USERNAME}/g" kaggle/bench/dataset-metadata.json \
             kaggle/notebooks/*/kernel-metadata.json
 
@@ -67,10 +69,20 @@ jobs:
           else
             kaggle datasets create -p kaggle/bench -r zip
           fi
-          for i in $(seq 1 40); do
-            status=$(kaggle datasets status "${KAGGLE_USERNAME}/savant-bench" 2>&1 || true)
-            echo "dataset status: ${status}"
-            case "$status" in *ready*) break ;; *error*) exit 1 ;; esac
+          # A status of ready can belong to the previous version, so wait until the
+          # published BUILD file carries this commit before any notebook starts.
+          for i in $(seq 1 60); do
+            rm -rf /tmp/build && mkdir -p /tmp/build
+            kaggle datasets download "${KAGGLE_USERNAME}/savant-bench" -f BUILD -p /tmp/build -q --force >/dev/null 2>&1 || true
+            (cd /tmp/build && for z in *.zip; do [ -f "$z" ] && unzip -o -q "$z"; done) || true
+            if [ "$(cat /tmp/build/BUILD 2>/dev/null)" = "${GITHUB_SHA}" ]; then
+              echo "dataset version for ${GITHUB_SHA::7} is live"
+              break
+            fi
+            if [ "$i" = 60 ]; then
+              echo "::error::The new dataset version never became live."
+              exit 1
+            fi
             sleep 15
           done
 
