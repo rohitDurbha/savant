@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 
 from .engine import Settings, analyze
@@ -18,7 +19,9 @@ def _one(args: tuple[Task, Settings]) -> Score:
 def evaluate(tasks: list[Task], settings: Settings, workers: int = 4) -> dict:
     jobs = [(t, settings) for t in tasks]
     if workers > 1:
-        with ProcessPoolExecutor(workers) as pool:
+        # Polars can deadlock in forked children, so workers start fresh with spawn.
+        ctx = multiprocessing.get_context("spawn")
+        with ProcessPoolExecutor(workers, mp_context=ctx) as pool:
             scores = list(pool.map(_one, jobs))
     else:
         scores = [_one(j) for j in jobs]

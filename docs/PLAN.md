@@ -23,3 +23,11 @@ The first full baseline ran on Kaggle on November 5, 2026, and its numbers live 
 The untrained Qwen3-4B model produced a grounded answer on all ten tables it was given, in about three to four rounds each. Two of its weaknesses are already clear from this run. Nearly two thirds of its code steps failed, and its answers mostly restate the guarded findings it was handed, so the mention rate of 93% says more about the engine than about the model.
 
 Phase 0 still needs a way to score the model on its own discoveries, and an inspection of why its code steps fail. Segment differences are the weakest pattern type for the engine at 72% recall.
+
+## Phase 0 calibration
+
+The first development sweep ran on November 5, 2026, over 100 null and 100 planted tables from seed 1, and every setting lives in `results/calibration-dev.json`. Each false discovery level from 0.01 to 0.1 and each effect size scale from half to double produced zero false findings on the null tables. Doubling the effect size bars cut recall from 89% to 66%, while halving them added under one point of recall.
+
+The defaults therefore stay at a false discovery rate of 0.05 and the conventional small effect sizes. Null tables cannot separate these settings yet, because confirmation and stability already remove every false finding, so a harder null set with skewed and clustered columns comes next.
+
+Three findings on planted tables first looked false, and each one turned out to be two metrics that both trend over time. They are real associations with a shared cause, so the grader now counts them as derived. The engine should learn to explain such pairs through the shared time column, and that check is planned for Phase 1.

@@ -93,3 +93,23 @@ def test_moderate_trend_is_confirmed():
     df, p = plant(base, "trend", 0, 0.3, np.random.default_rng(4))
     reported = {f.test.columns for f in analyze(df, FAST).reported}
     assert p.columns in reported
+
+
+def test_parallel_calibration_finishes_and_matches_serial():
+    from savant.calibrate import evaluate
+    from savant.planted import make_suite
+
+    tasks = make_suite(2, 2, 800, seed=3)
+    assert evaluate(tasks, FAST, workers=2) == evaluate(tasks, FAST, workers=1)
+
+
+def test_two_trends_on_one_clock_are_derived_not_false():
+    from savant.grade import derived_pairs
+    from savant.planted import Plant, Task
+
+    plants = [
+        Plant("trend", ("order_date", "metric0"), 0.4),
+        Plant("trend", ("order_date", "metric1"), 0.4),
+    ]
+    task = Task("x", pl.DataFrame({"a": [1]}), plants)
+    assert derived_pairs(task) == {frozenset({"metric0", "metric1"})}
