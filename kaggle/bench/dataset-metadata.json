@@ -1,0 +1,10 @@
+{
+ "title": "Savant bench",
+ "id": "KAGGLE_USERNAME/savant-bench",
+ "subtitle": "Held-out null and planted tables with the Savant wheel",
+ "licenses": [
+  {
+   "name": "CC0-1.0"
+  }
+ ]
+}

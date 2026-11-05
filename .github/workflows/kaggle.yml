@@ -1,0 +1,70 @@
+name: kaggle
+
+# Publishes the held-out bench dataset (tables plus the savant wheel) and pushes the
+# notebooks to Kaggle, where they run on a free GPU. Needs two repository secrets,
+# KAGGLE_USERNAME and KAGGLE_KEY, from kaggle.com/settings under API.
+
+on:
+  push:
+    branches: [main]
+    paths: ["kaggle/**", "src/**", "pyproject.toml", ".github/workflows/kaggle.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: kaggle
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - name: Stop early when the Kaggle secrets are missing
+        if: env.KAGGLE_USERNAME == '' || env.KAGGLE_KEY == ''
+        run: |
+          echo "::notice::Add KAGGLE_USERNAME and KAGGLE_KEY as repository secrets to publish to Kaggle."
+          exit 0
+
+      - uses: actions/checkout@v4
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+
+      - uses: actions/setup-python@v5
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        with:
+          python-version: "3.12"
+
+      - name: Build the wheel and the held-out bench tables
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        run: |
+          pip install -q . kaggle
+          rm -rf kaggle/bench/tasks kaggle/bench/*.whl
+          pip wheel -q . --no-deps -w kaggle/bench
+          # Seed 20261105 is the held-out bench. Tuning uses other seeds only.
+          savant plant kaggle/bench/tasks --null 50 --planted 50 --rows 2000 --seed 20261105
+          sed -i "s/KAGGLE_USERNAME/${KAGGLE_USERNAME}/g" kaggle/bench/dataset-metadata.json \
+            kaggle/notebooks/*/kernel-metadata.json
+
+      - name: Create or version the bench dataset
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        run: |
+          if kaggle datasets status "${KAGGLE_USERNAME}/savant-bench" >/dev/null 2>&1; then
+            kaggle datasets version -p kaggle/bench -m "bench from ${GITHUB_SHA::7}" -r zip
+          else
+            kaggle datasets create -p kaggle/bench -r zip
+          fi
+          for i in $(seq 1 40); do
+            status=$(kaggle datasets status "${KAGGLE_USERNAME}/savant-bench" 2>&1 || true)
+            echo "dataset status: ${status}"
+            case "$status" in *ready*) break ;; *error*) exit 1 ;; esac
+            sleep 15
+          done
+
+      - name: Push the notebooks, which starts a run on Kaggle
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        run: |
+          for dir in kaggle/notebooks/*/; do
+            kaggle kernels push -p "$dir"
+          done
