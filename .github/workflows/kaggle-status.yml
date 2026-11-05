@@ -35,7 +35,15 @@ jobs:
             done
             for f in out/${slug}/*.log; do
               [ -f "$f" ] || continue
-              echo "-- tail of $(basename "$f")"
-              tail -c 3000 "$f"
+              echo "-- printed output in $(basename "$f")"
+              python - "$f" <<'PY'
+          import json, sys
+          events = json.load(open(sys.argv[1]))
+          out = "".join(e["data"] for e in events if e.get("stream_name") == "stdout")
+          print(out[-6000:])
+          err = [e["data"] for e in events if e.get("stream_name") == "stderr"]
+          last = [line for line in err if "Error" in line][-3:]
+          print("-- last errors", *last, sep="\n")
+          PY
             done
           done
