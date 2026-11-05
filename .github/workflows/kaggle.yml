@@ -2,7 +2,8 @@ name: kaggle
 
 # Publishes the held-out bench dataset (tables plus the savant wheel) and pushes the
 # notebooks to Kaggle, where they run on a free GPU. Needs two repository secrets,
-# KAGGLE_USERNAME and KAGGLE_KEY, from kaggle.com/settings under API.
+# KAGGLE_USERNAME and KAGGLE_TOKEN, from kaggle.com/settings under API. KAGGLE_TOKEN may
+# hold either a new API token (KGAT_...) or the key from a legacy kaggle.json.
 
 on:
   push:
@@ -20,24 +21,33 @@ jobs:
     timeout-minutes: 30
     env:
       KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      KAGGLE_SECRET: ${{ secrets.KAGGLE_TOKEN || secrets.KAGGLE_KEY }}
     steps:
       - name: Stop early when the Kaggle secrets are missing
-        if: env.KAGGLE_USERNAME == '' || env.KAGGLE_KEY == ''
+        if: env.KAGGLE_USERNAME == '' || env.KAGGLE_SECRET == ''
         run: |
-          echo "::notice::Add KAGGLE_USERNAME and KAGGLE_KEY as repository secrets to publish to Kaggle."
+          echo "::notice::Add KAGGLE_USERNAME and KAGGLE_TOKEN as repository secrets to publish to Kaggle."
           exit 0
 
+      - name: Hand the credential to the Kaggle CLI in the form it expects
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_SECRET != ''
+        run: |
+          if [[ "$KAGGLE_SECRET" == KGAT_* ]]; then
+            echo "KAGGLE_API_TOKEN=$KAGGLE_SECRET" >> "$GITHUB_ENV"
+          else
+            echo "KAGGLE_KEY=$KAGGLE_SECRET" >> "$GITHUB_ENV"
+          fi
+
       - uses: actions/checkout@v4
-        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_SECRET != ''
 
       - uses: actions/setup-python@v5
-        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_SECRET != ''
         with:
           python-version: "3.12"
 
       - name: Build the wheel and the held-out bench tables
-        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_SECRET != ''
         run: |
           pip install -q . kaggle
           rm -rf kaggle/bench/tasks kaggle/bench/*.whl
@@ -48,7 +58,7 @@ jobs:
             kaggle/notebooks/*/kernel-metadata.json
 
       - name: Create or version the bench dataset
-        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_SECRET != ''
         run: |
           if kaggle datasets status "${KAGGLE_USERNAME}/savant-bench" >/dev/null 2>&1; then
             kaggle datasets version -p kaggle/bench -m "bench from ${GITHUB_SHA::7}" -r zip
@@ -63,7 +73,7 @@ jobs:
           done
 
       - name: Push the notebooks, which starts a run on Kaggle
-        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_KEY != ''
+        if: env.KAGGLE_USERNAME != '' && env.KAGGLE_SECRET != ''
         run: |
           for dir in kaggle/notebooks/*/; do
             kaggle kernels push -p "$dir"
