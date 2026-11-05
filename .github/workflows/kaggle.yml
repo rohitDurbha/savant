@@ -49,7 +49,7 @@ jobs:
       - name: Build the wheel and the held-out bench tables
         if: env.KAGGLE_USERNAME != '' && env.KAGGLE_SECRET != ''
         run: |
-          pip install -q . kaggle
+          pip install -q . kaggle six
           rm -rf kaggle/bench/tasks kaggle/bench/*.whl
           pip wheel -q . --no-deps -w kaggle/bench
           # Seed 20261105 is the held-out bench. Tuning uses other seeds only.
