@@ -1,0 +1,41 @@
+name: kaggle-status
+
+# Read only. Prints the status of each Kaggle notebook and the summary of its latest
+# output, so progress can be followed from the workflow log. Never pushes anything.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_SECRET: ${{ secrets.KAGGLE_TOKEN || secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Report notebook status and output summaries
+        run: |
+          if [[ "$KAGGLE_SECRET" == KGAT_* ]]; then export KAGGLE_API_TOKEN="$KAGGLE_SECRET"; else export KAGGLE_KEY="$KAGGLE_SECRET"; fi
+          pip install -q kaggle six
+          for dir in kaggle/notebooks/*/; do
+            slug=$(python -c "import json,sys; print(json.load(open('${dir}kernel-metadata.json'))['id'].split('/')[1])")
+            echo "== ${slug}"
+            kaggle kernels status "${KAGGLE_USERNAME}/${slug}" || true
+            mkdir -p "out/${slug}"
+            kaggle kernels output "${KAGGLE_USERNAME}/${slug}" -p "out/${slug}" -q || true
+            for f in out/${slug}/*.json; do
+              [ -f "$f" ] || continue
+              echo "-- $(basename "$f")"
+              python -c "import json,sys; d=json.load(open(sys.argv[1])); print(json.dumps({k: v for k, v in d.items() if k != 'runs'}, indent=1))" "$f"
+            done
+            for f in out/${slug}/*.log; do
+              [ -f "$f" ] || continue
+              echo "-- tail of $(basename "$f")"
+              tail -c 3000 "$f"
+            done
+          done
