@@ -72,3 +72,18 @@ def test_agent_rejects_typed_numbers_then_accepts_grounded_answer():
     assert run.grounded and run.rendered == "There are 600 orders."
     assert "without a placeholder" in client.seen[2]
     assert run.rounds == 3
+
+
+def test_model_context_stays_bounded_over_a_long_run():
+    task = make_task("w", 600, 0, seed=2)
+    sizes = []
+
+    class Counting:
+        def complete(self, messages):
+            sizes.append(len(messages))
+            return '<Code>emit("n", df.height)</Code>'
+
+    run = ask(task.table, "How many orders?", Counting(), max_rounds=10, keep_messages=4)
+    assert not run.grounded and run.rounds == 10
+    assert max(sizes) <= 2 + 4
+    assert "last step" in run.transcript[-3]["content"]

@@ -26,14 +26,22 @@ SYSTEM = """You are Savant, a careful data analyst. You work in steps.
 Each reply holds an optional <Analyze>...</Analyze> block for reasoning, then exactly one action.
 - <Code>python</Code> runs Python. A Polars DataFrame named df is already loaded, with numpy as np.
   Call emit("name", value) for every number you may want to cite. Keep each step short.
-- <Answer>text</Answer> ends the analysis.
+- <Answer>text</Answer> ends the analysis. Aim to answer within four steps.
 
 Rules for the answer.
 1. Never type a number. Cite every figure as {{rN.name}}, where rN is the step that emitted it.
 2. Describe relationships as associations. Never say one column causes another.
 3. Prefer the guarded findings listed below, which already passed false discovery control,
    confirmation on held-out rows and a stability check. Treat anything else as exploratory.
-4. If the data cannot answer the question, say so plainly."""
+4. If the data cannot answer the question, say so plainly.
+
+Example of a valid exchange.
+<Code>emit("mean_price", df["price"].mean())
+emit("rows", df.height)</Code>
+<Execute>{"step": "r1", "ok": true, "emitted": {"mean_price": 41.2, "rows": 2000}}</Execute>
+<Answer>The average price is {{r1.mean_price}} across {{r1.rows}} orders.</Answer>"""
+
+FEEDBACK_CHARS = 1500
 
 
 @dataclass
@@ -54,6 +62,12 @@ class Run:
     rounds: int = 0
     grounded: bool = False
     transcript: list[dict[str, str]] = field(default_factory=list)
+
+
+def window(messages: list[dict[str, str]], keep: int) -> list[dict[str, str]]:
+    """The system prompt and opening request, then only the most recent messages."""
+    head, tail = messages[:2], messages[2:]
+    return head + tail[-keep:] if len(tail) > keep else messages
 
 
 def findings_text(analysis: Analysis) -> str:
@@ -85,7 +99,13 @@ def ask(
     settings: Settings | None = None,
     max_rounds: int = 10,
     step_timeout: int = 30,
+    keep_messages: int = 8,
 ) -> Run:
+    """Answer one question about df.
+
+    Only the system prompt, the opening request and the latest keep_messages messages are
+    sent to the model each round, so memory and latency stay flat as a run goes on.
+    """
     analysis = analyze(df, settings)
     run = Run(question)
     allowed = _allowed_tokens(analysis)
@@ -103,7 +123,11 @@ def ask(
         df.write_parquet(data_path)
         for round_no in range(1, max_rounds + 1):
             run.rounds = round_no
-            reply = client.complete(messages)
+            if round_no == max_rounds:
+                messages.append(
+                    {"role": "user", "content": "This is the last step. Reply with <Answer>."}
+                )
+            reply = client.complete(window(messages, keep_messages))
             messages.append({"role": "assistant", "content": reply})
             actions = [(m.group(1), m.group(2).strip()) for m in ACTION.finditer(reply)]
             action = next(((k, v) for k, v in reversed(actions) if k != "Analyze"), None)
@@ -126,9 +150,8 @@ def ask(
                     "stdout": ex.stdout[-800:],
                     "error": "" if ex.ok else error,
                 }
-                messages.append(
-                    {"role": "user", "content": f"<Execute>{json.dumps(feedback)}</Execute>"}
-                )
+                payload = json.dumps(feedback, default=str)[:FEEDBACK_CHARS]
+                messages.append({"role": "user", "content": f"<Execute>{payload}</Execute>"})
                 continue
             stray = ungrounded_numbers(body, allowed)
             if stray:
