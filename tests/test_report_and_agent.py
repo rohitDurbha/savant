@@ -176,3 +176,22 @@ def test_findings_text_ranks_caps_and_names_near_deterministic_pairs():
     assert "near-deterministic" in text and "leakage" not in text
     assert "exploratory" not in text
     assert "31 more" in text
+
+
+def test_an_untagged_final_reply_counts_as_the_answer():
+    task = make_task("u", 600, 0, seed=2)
+    client = Scripted(["PAIR: none"])
+    run = ask(task.table, "What matters?", client)
+    assert run.grounded and run.rounds == 1
+    assert run.rendered.strip() == "PAIR: none"
+
+
+def test_guided_claims_without_a_guarded_finding_are_marked_unverified():
+    task = make_task("v", 3000, 3, seed=7)
+    real = [p for p in task.plants if p.kind != "leak"][0]
+    a, b = real.columns
+    client = Scripted([f"<Answer>PAIR: {a} | {b}\nPAIR: price | rating</Answer>"])
+    run = ask(task.table, "What matters?", client)
+    assert run.verified_pairs == {frozenset({a, b})}
+    assert run.unverified_pairs == {frozenset({"price", "rating"})}
+    assert "not confirmed by the checks" in run.rendered

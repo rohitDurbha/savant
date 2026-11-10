@@ -78,6 +78,8 @@ class Run:
     steps: list[Step] = field(default_factory=list)
     rounds: int = 0
     grounded: bool = False
+    verified_pairs: set[frozenset[str]] = field(default_factory=set)
+    unverified_pairs: set[frozenset[str]] = field(default_factory=set)
     transcript: list[dict[str, str]] = field(default_factory=list)
 
 
@@ -149,10 +151,16 @@ def ask(
     With show_findings off, the model gets only the data card and must find patterns
     with its own code, which measures the model apart from the engine.
     """
+    guarded: set[frozenset[str]] = set()
     if show_findings:
         analysis = analyze(df, settings)
         card = analysis.card
         context = f"Guarded findings\n{findings_text(analysis)}\n\n"
+        guarded = {
+            frozenset(f.test.columns)
+            for f in analysis.findings
+            if f.status in ("confirmed", "leakage")
+        }
     else:
         card, context = build_card(df), ""
     run = Run(question)
@@ -184,6 +192,11 @@ def ask(
             messages.append({"role": "assistant", "content": reply})
             actions = [(m.group(1), m.group(2).strip()) for m in ACTION.finditer(reply)]
             action = next(((k, v) for k, v in reversed(actions) if k != "Analyze"), None)
+            loose = ACTION.sub("", reply).strip()
+            if action is None and loose and "<" not in loose:
+                # Small models often drop the tags on their final reply. Plain text with no
+                # code is treated as the answer, and it still has to pass grounding.
+                action = ("Answer", loose)
             if action is None:
                 messages.append({"role": "user", "content": "Reply with one <Code> or <Answer>."})
                 continue
@@ -232,6 +245,18 @@ def ask(
                 )
                 continue
             run.answer, run.grounded = body, True
+            if show_findings:
+                claimed = parse_pairs(body, df.columns)
+                run.verified_pairs = claimed & guarded
+                run.unverified_pairs = claimed - guarded
+                if run.unverified_pairs:
+                    listed = "; ".join(
+                        " | ".join(sorted(p)) for p in sorted(run.unverified_pairs, key=sorted)
+                    )
+                    run.rendered += (
+                        "\n\nNote. These pairs were not confirmed by the checks and may be "
+                        f"noise: {listed}."
+                    )
             break
     run.transcript = messages
     return run

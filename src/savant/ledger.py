@@ -21,6 +21,7 @@ class Test:
     effect_name: str
     n: int
     note: str = ""
+    explained: float | None = None  # share of variance explained, where it applies
 
     def to_dict(self) -> dict:
         return asdict(self)

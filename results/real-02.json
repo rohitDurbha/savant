@@ -1,0 +1,191 @@
+{
+ "ElectricVehiclePopulationData_1": {
+  "rows": 172796,
+  "columns": 16,
+  "seconds": 326.1,
+  "cleaning": "cleaning report, 172796 rows in and 172796 rows out\n- note: the file was cut off mid-row, so its last partial line of 47 bytes was dropped\n- VIN (1-10): possible typos, not changed, 12501 values (e.g. WAUSPBFF7H next to WAUTPBFF7H; 5YJ3E1EC3P next to 5YJ3E1EA3P; WA1F2AFY3N next to WA1F2AFY3M)\n- City: unified case and spacing, 4 values (e.g. McChord AFB to Mcchord Afb; McCleary to Mccleary)\n- City: possible typos, not changed, 3 values (e.g. Creston next to Preston; Harrington next to Darrington; Arrington next to Arlington)\n- Model: possible typos, not changed, 8577 values (e.g. MODEL X next to MODEL Y; MODEL S next to MODEL Y; SL-CLASS next to S-CLASS)",
+  "entity": null,
+  "time": null,
+  "kinds": {
+   "VIN (1-10)": "text",
+   "County": "text",
+   "City": "text",
+   "State": "categorical",
+   "Postal Code": "code",
+   "Model Year": "numeric",
+   "Make": "categorical",
+   "Model": "text",
+   "Electric Vehicle Type": "categorical",
+   "Clean Alternative Fuel Vehicle (CAFV) Eligibility": "categorical",
+   "Electric Range": "numeric",
+   "Legislative District": "code",
+   "DOL Vehicle ID": "id",
+   "Vehicle Location": "text",
+   "Electric Utility": "categorical",
+   "2020 GEOID": "code"
+  },
+  "tests": 10,
+  "dropped": {
+   "fdr": 0,
+   "effect": 2,
+   "confirmation": 1,
+   "stability": 0
+  },
+  "findings": "- [confirmed] association between Electric Vehicle Type and Clean Alternative Fuel Vehicle (CAFV) Eligibility, chi_square, cramers_v 0.763, p 0\n- [confirmed] correlation between Model Year and Electric Range, spearman, abs_rho 0.554, p 0\n- [confirmed] segment between Make and Electric Range, kruskal, max_group_d 0.535, p 0, Make=CHEVROLET stands out, standardized difference +0.53 against the rest\n- [confirmed] segment between Electric Vehicle Type and Model Year, kruskal, max_group_d 0.383, p 2.3e-236, Electric Vehicle Type=Battery Electric Vehicle (BEV) stands out, standardized difference +0.38 against the rest\n- [near-deterministic, likely a definition or a leak] segment between Clean Alternative Fuel Vehicle (CAFV) Eligibility and Electric Range, kruskal, max_group_d 2.605, p 0, Clean Alternative Fuel Vehicle (CAFV) Eligibility=Clean Alternative Fuel Vehicle Eligible stands out, standardized difference +2.61 against the rest\n- [near-deterministic, likely a definition or a leak] segment between Clean Alternative Fuel Vehicle (CAFV) Eligibility and Model Year, kruskal, max_group_d 1.604, p 0, Clean Alternative Fuel Vehicle (CAFV) Eligibility=Eligibility unknown as battery range has not been researched stands out, standardized difference +1.60 against the rest\n- [near-deterministic, likely a definition or a leak] segment between Make and Model Year, kruskal, max_group_d 1.226, p 0, Make=NISSAN stands out, standardized difference -1.23 against the rest\n(1 more findings are not shown, weaker or unconfirmed.)",
+  "confirmed": 4,
+  "model": {
+   "grounded": false,
+   "rounds": 10,
+   "seconds": 143.4,
+   "pairs": [],
+   "answer": null
+  }
+ },
+ "USChronicDiseaseIndicators_1": {
+  "rows": 144053,
+  "columns": 34,
+  "seconds": 226.0,
+  "cleaning": "cleaning report, 144053 rows in and 144053 rows out\n- note: the file was cut off mid-row, so its last partial line of 103 bytes was dropped\n- DataValue: number formats, 5640 values (e.g. 21,053 to 21053; 3,793 to 3793; 2,466 to 2466)\n- DataValueAlt: number formats, 5640 values (e.g. 21,053 to 21053; 3,793 to 3793; 2,466 to 2466)\n- LowConfidenceLimit: number formats, 2 values (e.g. 1,015.8 to 1015.8; 1,008.1 to 1008.1)\n- HighConfidenceLimit: number formats, 8 values (e.g. 1,247.1 to 1247.1; 1,255.4 to 1255.4; 1,104.5 to 1104.5)\n- QuestionID: possible typos, not changed, 65 values (e.g. CVD01 next to CKD01; DIA01 next to DIS01)",
+  "entity": null,
+  "time": null,
+  "kinds": {
+   "YearStart": "numeric",
+   "YearEnd": "numeric",
+   "LocationAbbr": "categorical",
+   "LocationDesc": "categorical",
+   "DataSource": "categorical",
+   "Topic": "categorical",
+   "Question": "categorical",
+   "Response": "categorical",
+   "DataValueUnit": "categorical",
+   "DataValueType": "categorical",
+   "DataValue": "numeric",
+   "DataValueAlt": "numeric",
+   "DataValueFootnoteSymbol": "categorical",
+   "DataValueFootnote": "categorical",
+   "LowConfidenceLimit": "numeric",
+   "HighConfidenceLimit": "numeric",
+   "StratificationCategory1": "categorical",
+   "Stratification1": "categorical",
+   "StratificationCategory2": "categorical",
+   "Stratification2": "categorical",
+   "StratificationCategory3": "categorical",
+   "Stratification3": "categorical",
+   "Geolocation": "categorical",
+   "LocationID": "code",
+   "TopicID": "categorical",
+   "QuestionID": "categorical",
+   "ResponseID": "categorical",
+   "DataValueTypeID": "categorical",
+   "StratificationCategoryID1": "categorical",
+   "StratificationID1": "categorical",
+   "StratificationCategoryID2": "categorical",
+   "StratificationID2": "categorical",
+   "StratificationCategoryID3": "categorical",
+   "StratificationID3": "categorical"
+  },
+  "tests": 53,
+  "dropped": {
+   "fdr": 1,
+   "effect": 6,
+   "confirmation": 0,
+   "stability": 0
+  },
+  "findings": "- [confirmed] segment between DataSource and HighConfidenceLimit, kruskal, max_group_d 0.936, p 0, DataSource=US Cancer DVT stands out, standardized difference +0.94 against the rest\n- [confirmed] segment between DataValueUnit and HighConfidenceLimit, kruskal, max_group_d 0.936, p 0, DataValueUnit=per 100,000 stands out, standardized difference +0.94 against the rest\n- [confirmed] segment between Topic and LowConfidenceLimit, kruskal, max_group_d 0.916, p 0, Topic=Cancer stands out, standardized difference +0.92 against the rest\n- [confirmed] segment between Topic and HighConfidenceLimit, kruskal, max_group_d 0.861, p 0, Topic=Cancer stands out, standardized difference +0.86 against the rest\n- [confirmed] correlation between YearStart and YearEnd, spearman, abs_rho 0.846, p 0\n- [confirmed] segment between LocationAbbr and DataValue, kruskal, max_group_d 0.795, p 5.2e-35, LocationAbbr=US stands out, standardized difference +0.80 against the rest\n- [confirmed] segment between DataValueType and YearStart, kruskal, max_group_d 0.709, p 0, DataValueType=Age-adjusted Rate stands out, standardized difference -0.71 against the rest\n- [confirmed] segment between DataValueType and LowConfidenceLimit, kruskal, max_group_d 0.686, p 0, DataValueType=Crude Rate stands out, standardized difference +0.69 against the rest\n- [confirmed] segment between DataValueType and HighConfidenceLimit, kruskal, max_group_d 0.659, p 0, DataValueType=Crude Rate stands out, standardized difference +0.66 against the rest\n- [confirmed] segment between DataValueFootnoteSymbol and YearStart, kruskal, max_group_d 0.649, p 0, DataValueFootnoteSymbol=~ stands out, standardized difference -0.65 against the rest\n- [confirmed] segment between DataSource and YearEnd, kruskal, max_group_d 0.602, p 0, DataSource=US Cancer DVT stands out, standardized difference -0.60 against the rest\n- [confirmed] segment between DataValueUnit and YearEnd, kruskal, max_group_d 0.565, p 0, DataValueUnit=per 100,000 stands out, standardized difference -0.57 against the rest\n- [near-deterministic, likely a definition or a leak] segment between Question and LowConfidenceLimit, kruskal, max_group_d 6.438, p 0, Question=Invasive cancer (all sites combined), incidence stands out, standardized difference +6.44 against the rest\n- [near-deterministic, likely a definition or a leak] segment between Question and HighConfidenceLimit, kruskal, max_group_d 6.119, p 0, Question=Invasive cancer (all sites combined), incidence stands out, standardized difference +6.12 against the rest\n- [near-deterministic, likely a definition or a leak] segment between DataSource and YearStart, kruskal, max_group_d 3.741, p 0, DataSource=US Cancer DVT stands out, standardized difference -3.74 against the rest\n(31 more findings are not shown, weaker or unconfirmed.)",
+  "confirmed": 34,
+  "model": {
+   "grounded": true,
+   "rounds": 3,
+   "seconds": 168.9,
+   "pairs": [
+    "DataSource | HighConfidenceLimit",
+    "DataSource | YearEnd",
+    "DataValue | LocationAbbr",
+    "DataValueFootnoteSymbol | YearStart",
+    "DataValueType | HighConfidenceLimit",
+    "DataValueType | LowConfidenceLimit",
+    "DataValueType | YearStart",
+    "DataValueUnit | HighConfidenceLimit",
+    "DataValueUnit | YearEnd",
+    "HighConfidenceLimit | Question",
+    "HighConfidenceLimit | Topic",
+    "LowConfidenceLimit | Question",
+    "LowConfidenceLimit | Topic",
+    "YearEnd | YearStart"
+   ],
+   "answer": "PAIR: DataSource | HighConfidenceLimit  \nPAIR: DataValueUnit | HighConfidenceLimit  \nPAIR: Topic | LowConfidenceLimit  \nPAIR: Topic | HighConfidenceLimit  \nPAIR: YearStart | YearEnd  \nPAIR: LocationAbbr | DataValue  \nPAIR: DataValueType | YearStart  \nPAIR: DataValueType | LowConfidenceLimit  \nPAIR: DataValueType | HighConfidenceLimit  \nPAIR: DataValueFootnoteSymbol | YearStart  \nPAIR: DataSource | YearEnd  \nPAIR: DataValueUnit | YearEnd  \nPAIR: Question | LowConfidenceLimit  \nPAIR: Question | HighConfidenceLimit"
+  }
+ },
+ "messy_HR_data": {
+  "rows": 1000,
+  "columns": 10,
+  "seconds": 0.7,
+  "cleaning": "cleaning report, 1000 rows in and 1000 rows out\n- Name: trimmed spacing, 1000 values (e.g. ' grace '; ' david '; ' hannah ')\n- Age: missing placeholders, 159 values (e.g. 'nan')\n- Age: number words, 176 values (e.g. thirty to 30)\n- Salary: trimmed spacing, 167 values (e.g. ' NAN ')\n- Salary: missing placeholders, 167 values (e.g. 'NAN')\n- Salary: number words, 143 values (e.g. SIXTY THOUSAND to 60000)\n- Joining Date: parsed dates from 5 formats, 1000 values (e.g. 99-99-9999; 99/99/9999; 9999.99.99)\n- Email: missing placeholders, 200 values (e.g. 'nan')\n- Phone Number: trimmed spacing, 191 values (e.g. ' ')\n- Phone Number: missing placeholders, 376 values (e.g. 'nan'; '')",
+  "entity": null,
+  "time": "Joining Date",
+  "kinds": {
+   "Name": "categorical",
+   "Age": "numeric",
+   "Salary": "numeric",
+   "Gender": "categorical",
+   "Department": "categorical",
+   "Position": "categorical",
+   "Joining Date": "datetime",
+   "Performance Score": "categorical",
+   "Email": "categorical",
+   "Phone Number": "categorical"
+  },
+  "tests": 38,
+  "dropped": {
+   "fdr": 38,
+   "effect": 0,
+   "confirmation": 0,
+   "stability": 0
+  },
+  "findings": "No guarded findings. The scan found nothing that survived its checks.",
+  "confirmed": 0,
+  "model": {
+   "grounded": true,
+   "rounds": 4,
+   "seconds": 17.0,
+   "pairs": [],
+   "answer": "PAIR: none"
+  }
+ },
+ "warehouse_messy_data": {
+  "rows": 1000,
+  "columns": 10,
+  "seconds": 0.6,
+  "cleaning": "cleaning report, 1000 rows in and 1000 rows out\n- Product Name: trimmed spacing, 1000 values (e.g. ' gadget y '; ' widget a '; ' gadget z ')\n- Quantity: missing placeholders, 158 values (e.g. 'NaN')\n- Quantity: number words, 160 values (e.g. two hundred to 200)\n- Price: missing placeholders, 207 values (e.g. 'NaN')\n- Last Restocked: missing placeholders, 200 values (e.g. 'NaN')\n- Last Restocked: parsed dates from 1 formats, 800 values (e.g. 99/99/9999)",
+  "entity": "Product ID",
+  "time": "Last Restocked",
+  "kinds": {
+   "Product ID": "entity",
+   "Product Name": "categorical",
+   "Category": "categorical",
+   "Warehouse": "categorical",
+   "Location": "categorical",
+   "Quantity": "numeric",
+   "Price": "numeric",
+   "Supplier": "categorical",
+   "Status": "categorical",
+   "Last Restocked": "datetime"
+  },
+  "tests": 30,
+  "dropped": {
+   "fdr": 30,
+   "effect": 0,
+   "confirmation": 0,
+   "stability": 0
+  },
+  "findings": "No guarded findings. The scan found nothing that survived its checks.",
+  "confirmed": 0,
+  "model": {
+   "grounded": false,
+   "rounds": 10,
+   "seconds": 61.9,
+   "pairs": [],
+   "answer": null
+  }
+ }
+}

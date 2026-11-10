@@ -36,7 +36,8 @@ class Settings:
     min_rows_confirm: int = 500
     stability_runs: int = 100
     stability_keep: float = 0.8
-    leak_threshold: float = 0.95
+    leak_threshold: float = 0.95  # for correlations and Cramer's V, which run from 0 to 1
+    leak_explained: float = 0.9  # for group differences, the share of variance the groups explain
     seed: int = 0
 
 
@@ -93,6 +94,18 @@ def split(
         return ordered.filter(pl.Series(explore_block)), ordered.filter(pl.Series(~explore_block))
     idx = np.random.default_rng(s.seed).permutation(df.height)
     return df[idx[:cut].tolist()], df[idx[cut:].tolist()]
+
+
+def _near_deterministic(t: Test, s: Settings) -> bool:
+    """A link so tight that one column nearly defines the other.
+
+    Correlations and Cramer's V already run from 0 to 1. A group difference is measured in
+    standard deviations, which has no ceiling, so it uses the share of variance the groups
+    explain. A large difference such as one brand of car being older is not a definition.
+    """
+    if t.explained is not None:
+        return t.explained >= s.leak_explained
+    return t.effect >= s.leak_threshold
 
 
 def _passes(t: Test | None, s: Settings, alpha: float, sign: float | None = None) -> bool:
@@ -171,7 +184,7 @@ def analyze(df: pl.DataFrame, s: Settings | None = None) -> Analysis:
             dropped["fdr"] += 1
         elif t.effect < s.min_effect[t.effect_name]:
             dropped["effect"] += 1
-        elif t.effect >= s.leak_threshold:
+        elif _near_deterministic(t, s):
             candidates.append(Finding(t, "leakage"))
         else:
             candidates.append(Finding(t, "exploratory"))

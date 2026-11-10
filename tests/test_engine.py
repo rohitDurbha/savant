@@ -189,3 +189,20 @@ def test_hard_null_tables_produce_almost_no_findings():
 
     total = sum(len(analyze(t.table, FAST).reported) for t in make_hard_suite(10, 2000, 50))
     assert total <= 1
+
+
+def test_a_large_group_difference_is_not_called_near_deterministic():
+    rng = np.random.default_rng(4)
+    groups = rng.choice(["a", "b", "c", "d"], 4000)
+    y = rng.normal(size=4000) + 1.3 * (groups == "a")  # large, but far from a definition
+    res = analyze(pl.DataFrame({"g": groups, "y": y}), FAST)
+    assert [f.status for f in res.findings] == ["confirmed"]
+
+
+def test_a_category_that_fixes_a_number_is_near_deterministic():
+    rng = np.random.default_rng(5)
+    groups = rng.choice(["a", "b", "c", "d"], 4000)
+    level = {"a": 10.0, "b": 20.0, "c": 30.0, "d": 40.0}
+    y = np.array([level[g] for g in groups]) + rng.normal(0, 0.5, 4000)
+    res = analyze(pl.DataFrame({"g": groups, "y": y}), FAST)
+    assert [f.status for f in res.findings] == ["leakage"]

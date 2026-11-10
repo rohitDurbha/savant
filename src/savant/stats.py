@@ -106,6 +106,9 @@ def cat_num(df: pl.DataFrame, cat: str, num: str, min_support: float) -> Test | 
     if all(np.ptp(g) == 0 for g in groups):
         return None
     h, p = sps.kruskal(*groups)
+    every = np.concatenate(groups)
+    total = float(((every - every.mean()) ** 2).sum())
+    between = float(sum(g.size * (g.mean() - every.mean()) ** 2 for g in groups))
     top, d = _standout(groups, labels)
     return Test(
         id="",
@@ -118,6 +121,7 @@ def cat_num(df: pl.DataFrame, cat: str, num: str, min_support: float) -> Test | 
         effect_name="max_group_d",
         n=sub.height,
         note=f"{cat}={top} stands out, standardized difference {d:+.2f} against the rest",
+        explained=between / total if total else 0.0,
     )
 
 

@@ -79,3 +79,19 @@ The run also exposed serious problems, recorded here in full.
 6. The chronic disease table produced 94 findings, and the prompt that listed all of them ran the GPU out of memory. The model now sees at most fifteen findings, strongest first, with a count of the rest.
 
 The chronic disease table is in long format, with one row per indicator, place and year, and its findings are mostly structural. Detecting long tables and reshaping them before analysis belongs to Phase 1. The model also used all ten rounds on two tables without a grounded answer, and the next run saves its transcripts so the cause can be read.
+
+## Phase 0 second real data run
+
+The second run on the same four tables, on November 10, 2026, confirmed the fixes, and its output lives in `results/real-02.json`. No value was changed on a guess, since the 12,501 VIN prefixes, 8,577 model names, three town names and 65 question codes were listed as possible typos and left alone. Postal codes, districts, GEOIDs and location ids were treated as codes, and map points, cities, counties and model names with too many distinct values were left out of the tests.
+
+The electric vehicle table now gives four confirmed findings, each of which a domain expert would recognize. Battery electric vehicles are mostly eligible for the clean fuel program, newer model years have longer electric range, range differs by make, and battery electric vehicles are newer than plug-in hybrids on average. The chronic disease table still gives 34 structural findings because it is in long format. The two messy tables give none.
+
+Reading the saved transcripts showed three more problems, which are fixed with tests.
+
+1. The model often wrote its final PAIR lines without the Answer tags, so the loop kept asking until it ran out of rounds. A plain reply with no code is now treated as the answer and still has to pass grounding.
+2. On the warehouse table the engine found nothing, yet the guided model listed five relationships. In guided mode every claimed pair is now checked against the guarded findings, and any pair without one is marked in the report as not confirmed and possibly noise.
+3. A group difference larger than 0.95 standard deviations was labeled near-deterministic, which caught ordinary large effects such as Nissans being older cars on average. Group differences now count as near-deterministic only when the groups explain at least 90% of the variance, and the development sweep is unchanged at zero false findings and 89% recall.
+
+## Phase 0 result
+
+The Phase 0 gate is met. The loop runs end to end on real files on Kaggle, and the baseline scores for the engine, the blind model and the guided model are recorded in `results/`. The fixes from the transcripts of the second real data run have tests but have not yet run on Kaggle, so the first Phase 1 run will confirm them.

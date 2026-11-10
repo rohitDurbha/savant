@@ -10,4 +10,4 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-05 | 00-baseline, version 5 | Completed, results in results/baseline-00.json |
 | 2026-11-09 | 00-baseline, version 6 | Completed, blind and guided results in results/baseline-01.json |
 | 2026-11-10 | 01-real, version 1 | Completed, exposed six problems listed in PLAN.md, results in results/real-01.json |
-| 2026-11-10 | 01-real, version 2 | Same files after the fixes from version 1 |
+| 2026-11-10 | 01-real, version 2 | Completed, results in results/real-02.json |
