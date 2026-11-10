@@ -73,6 +73,14 @@ def cmd_analyze(a: argparse.Namespace) -> None:
     print("\nAll guarded findings\n" + findings_text(res, limit=50))
 
 
+def cmd_drivers(a: argparse.Namespace) -> None:
+    from .drivers import drivers
+    from .engine import Settings
+
+    df = _load_clean(a.file, quiet=True)
+    print(drivers(df, a.target, Settings()).to_text())
+
+
 def cmd_plant(a: argparse.Namespace) -> None:
     from .planted import make_hard_suite, make_suite, write_suite
 
@@ -132,6 +140,11 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("--json", action="store_true")
     s.add_argument("--stability-runs", type=int, default=100)
     s.set_defaults(fn=cmd_analyze)
+
+    s = sub.add_parser("drivers", help="columns most associated with a target, on held-out rows")
+    s.add_argument("file")
+    s.add_argument("target")
+    s.set_defaults(fn=cmd_drivers)
 
     s = sub.add_parser("plant", help="write null and planted benchmark tables")
     s.add_argument("out")

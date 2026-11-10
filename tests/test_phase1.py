@@ -244,3 +244,53 @@ def test_unusual_values_are_counted_in_the_data_card_without_dropping_rows():
     assert c.stats["unusual"] == 3
     assert "unusual=3" in card.to_text()
     assert card.rows == 1000
+
+
+def test_drivers_find_the_planted_cause_of_a_target():
+    from savant.drivers import drivers
+
+    base = make_task("d", 3000, 0, seed=8).table
+    rng = np.random.default_rng(8)
+    df, p = plant(base, "correlation", 0, 0.6, rng)
+    res = drivers(df, "signal_y0", FAST)
+    assert res.reliable
+    assert res.drivers[0].feature == "signal_x0"
+    assert all(d.feature != "order_id" for d in res.drivers)
+
+
+def test_drivers_on_noise_report_nothing_reliable():
+    from savant.drivers import drivers
+
+    found = []
+    for seed in range(5):
+        res = drivers(make_task("n", 2000, 0, seed=seed).table, "price", FAST)
+        found += [d.feature for d in res.drivers]
+    assert found == []
+
+
+def test_a_leaked_copy_of_the_target_is_set_aside_not_called_a_driver():
+    from savant.drivers import drivers
+
+    rng = np.random.default_rng(3)
+    y = rng.normal(size=2000)
+    df = pl.DataFrame(
+        {
+            "revenue": y,
+            "revenue_net": y * 0.9 + rng.normal(0, 0.01, 2000),
+            "x": rng.normal(size=2000),
+        }
+    )
+    res = drivers(df, "revenue", FAST)
+    assert "revenue_net" in res.leaks
+    assert all(d.feature != "revenue_net" for d in res.drivers)
+
+
+def test_drivers_on_hard_null_tables_report_nothing():
+    from savant.drivers import drivers
+    from savant.planted import make_hard_suite
+
+    found = []
+    for t in make_hard_suite(5, 2000, 90):
+        for target in ("spend", "wait_minutes"):
+            found += [(t.id, target, d.feature) for d in drivers(t.table, target, FAST).drivers]
+    assert found == []

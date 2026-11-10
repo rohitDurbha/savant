@@ -13,6 +13,7 @@ dependencies = [
   "fastexcel>=0.11",
   "pandas>=2.1",    # models write pandas far more reliably than Polars
   "pyarrow>=14",    # pandas needs it to read the Parquet handoff file
+  "scikit-learn>=1.4",  # held-out permutation importance for driver analysis
 ]
 
 [project.optional-dependencies]
