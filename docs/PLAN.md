@@ -106,3 +106,23 @@ Work on Phase 1 started on November 10, 2026, and each piece below began with a 
 4. Level shifts over time are tested at seventeen candidate cuts, with the p-value multiplied by the number of cuts and corrected for autocorrelation left after the step. Unusual values are counted in the data card with the Iglewicz and Hoaglin rule, and no row is dropped because of them.
 
 Level shifts are now one of six planted pattern types, so the development suite and the held-out bench both changed composition from this commit on. The sweep in `results/calibration-dev.json` at the default settings found no false findings on 100 easy and 100 hard null tables, recall of 90% overall and 95% for level shifts, and all 50 planted leaks flagged.
+
+5. Driver analysis fits a regularized gradient boosted model on the exploration rows and shuffles each feature on the confirmation rows. A feature counts only when its held-out importance stays above zero across repeats, only when the model beats a simple baseline, and never when the feature alone predicts the target almost perfectly.
+6. Every insight gets a Vega-Lite chart chosen for its kind of finding, and a linter blocks bars that skip zero, dual axes, crowded pies and unordered categories. The report command writes one HTML page with ranked insights, charts and the cleaning report.
+
+## Phase 1 gate
+
+The gate asks that false findings on null tables stay under target while recall holds. The target follows from the false discovery rate of 0.05 that was fixed in Phase 0, since under a fully null table that rate bounds the chance of any false finding at 5%. This is the first time the target is written as a number, and it is written after the bench result below was seen.
+
+The held-out bench ran once at the default settings on November 10, 2026, and its output lives in `results/bench-phase1.json`.
+
+| Measure | Phase 0 bench | Phase 1 bench |
+| --- | --- | --- |
+| Easy null tables with any false finding | 0 of 50 | 0 of 50 |
+| Hard null tables with any false finding | 2 of 50 | 1 of 50 |
+| Recall on planted tables | 88% | 92% |
+| Planted leaks flagged | 31 of 31 | 26 of 26 |
+
+Both null rates sit under 5% and recall rose by four points, so the gate passes. The bench composition changed between the two phases when level shifts became a planted pattern, so the two columns are close but not identical tests.
+
+The one false finding linked two slowly drifting sensors in a table with repeat customers. It was studied after the bench result was seen, and no setting was changed because of it. On 200 fresh hard tables from a new development seed the same pair was never reported, and across every hard table checked so far the rate is one in 350, which is well inside what the false discovery rate allows. Two regression tests now cover independent slow drifts and a real link between drifting series.

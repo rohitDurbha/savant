@@ -1,0 +1,22 @@
+{
+ "null_files": 50,
+ "false_findings_per_null_file": 0.0,
+ "null_files_with_any_false_finding": 0,
+ "hard_null_files": 50,
+ "false_findings_per_hard_null_file": 0.02,
+ "hard_null_files_with_any_false_finding": 1,
+ "planted_files": 50,
+ "recall": 0.9193548387096774,
+ "recall_by_kind": {
+  "association": 0.92,
+  "correlation": 1.0,
+  "segment": 0.84,
+  "shift": 0.818,
+  "trend": 1.0
+ },
+ "false_findings_in_planted_files": 0,
+ "derived_findings_in_planted_files": 0,
+ "leaks_flagged": "26 of 26",
+ "seconds": 30,
+ "note": "held-out bench, seed 20261105, default settings, measured once"
+}

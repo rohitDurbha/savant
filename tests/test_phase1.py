@@ -323,3 +323,37 @@ def test_findings_are_not_grouped_just_because_they_share_the_time_column():
     insights = rank([trend, shift], time_column="order_date")
     assert len(insights) == 2
     assert headline(shift) == "level9 shifted up around 2025-05-03."
+
+
+def test_two_independent_slow_drifts_are_not_called_correlated():
+    from datetime import date, timedelta
+
+    rng = np.random.default_rng(11)
+    n = 2000
+    days = [date(2024, 1, 1) + timedelta(days=int(d)) for d in np.sort(rng.integers(0, 730, n))]
+
+    def ar1(phi):
+        x = np.zeros(n)
+        for i in range(1, n):
+            x[i] = phi * x[i - 1] + rng.normal()
+        return x
+
+    hits = 0
+    for _ in range(20):
+        df = pl.DataFrame({"day": days, "a": ar1(0.95), "b": ar1(0.95)})
+        hits += any(f.test.kind == "correlation" for f in analyze(df, FAST).reported)
+    assert hits == 0
+
+
+def test_a_real_link_between_drifting_series_survives_prewhitening():
+    from datetime import date, timedelta
+
+    rng = np.random.default_rng(12)
+    n = 2000
+    days = [date(2024, 1, 1) + timedelta(days=int(d)) for d in np.sort(rng.integers(0, 730, n))]
+    x = np.zeros(n)
+    for i in range(1, n):
+        x[i] = 0.9 * x[i - 1] + rng.normal()
+    y = x + rng.normal(0, 1.0, n)  # y tracks x step by step
+    res = analyze(pl.DataFrame({"day": days, "x": x, "y": y}), FAST)
+    assert ("x", "y") in {f.test.columns for f in res.reported}

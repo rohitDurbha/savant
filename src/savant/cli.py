@@ -121,6 +121,25 @@ def cmd_calibrate(a: argparse.Namespace) -> None:
     print(text)
 
 
+def cmd_bench(a: argparse.Namespace) -> None:
+    import time
+
+    from .calibrate import evaluate
+    from .engine import Settings
+    from .planted import make_hard_suite, make_suite
+
+    seed = 20261105
+    tasks = make_suite(50, 50, 2000, seed) + make_hard_suite(50, 2000, seed + 50_000)
+    started = time.time()
+    summary = evaluate(tasks, Settings(stability_runs=100), workers=a.workers)
+    summary["seconds"] = round(time.time() - started)
+    summary["note"] = f"held-out bench, seed {seed}, default settings, measured once"
+    text = json.dumps(summary, indent=1)
+    if a.out:
+        Path(a.out).write_text(text + "\n")
+    print(text)
+
+
 def cmd_ask(a: argparse.Namespace) -> None:
     from .agent import ask
     from .llm import OpenAICompatible
@@ -182,6 +201,11 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("--workers", type=int, default=4)
     s.add_argument("--out")
     s.set_defaults(fn=cmd_calibrate)
+
+    s = sub.add_parser("bench", help="measure the engine once on the held-out bench")
+    s.add_argument("--workers", type=int, default=2)
+    s.add_argument("--out")
+    s.set_defaults(fn=cmd_bench)
 
     s = sub.add_parser("ask", help="ask a question through an OpenAI-compatible model server")
     s.add_argument("file")
