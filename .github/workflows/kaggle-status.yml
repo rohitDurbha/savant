@@ -33,6 +33,33 @@ jobs:
               echo "-- $(basename "$f")"
               python -c "import json,sys; d=json.load(open(sys.argv[1])); print(json.dumps({k: v for k, v in d.items() if k != 'runs'}, indent=1))" "$f"
             done
+            for f in out/${slug}/runs.jsonl; do
+              [ -f "$f" ] || continue
+              echo "-- failed code steps in runs.jsonl"
+              python - "$f" <<'PY'
+          import collections, json, re, sys
+          errors = collections.Counter()
+          examples = []
+          for line in open(sys.argv[1]):
+              run = json.loads(line)
+              msgs = run.get("transcript") or []
+              for i, m in enumerate(msgs):
+                  if m["role"] != "user" or not m["content"].startswith("<Execute>"):
+                      continue
+                  body = m["content"][len("<Execute>"):].removesuffix("</Execute>")
+                  err = re.search(r'"error": "(.*?)"(?:,|})', body)
+                  if not err or not err.group(1):
+                      continue
+                  errors[err.group(1)[:160]] += 1
+                  code = re.search(r"<Code>(.*?)</Code>", msgs[i - 1]["content"], re.S)
+                  if len(examples) < 8 and code:
+                      examples.append((code.group(1).strip()[:400], err.group(1)[:200]))
+          for e, n in errors.most_common(15):
+              print(n, e)
+          for code, err in examples:
+              print("---- code\n" + code + "\n---- error\n" + err)
+          PY
+            done
             for f in out/${slug}/*.log; do
               [ -f "$f" ] || continue
               echo "-- printed output in $(basename "$f")"
