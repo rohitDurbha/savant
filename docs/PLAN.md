@@ -153,7 +153,7 @@ Two limits are known before the pilot runs. Training and bench tables come from 
 
 ## Phase 2 first pilot result
 
-The first pilot ran on November 10, 2026, on two T4 GPUs, and it did not beat the base model in guided mode. The generator kept 357 of 358 conversations, and 333 of them trained a LoRA adapter for 41 steps in about 38 minutes. Held-out loss fell from 2.82 to 0.03. That fall mostly shows that the scripted answers repeat a small set of sentence templates, which the adapter learned almost word for word.
+The first pilot ran on November 10, 2026, on two T4 GPUs, and it did not beat the base model in guided mode. The generator kept 357 of 358 conversations, and 333 of them trained a LoRA adapter for 41 steps in about 38 minutes. Loss on the held-out conversations fell from 2.82 to 0.03. That fall mostly shows that the scripted answers repeat a small set of sentence templates, which the adapter learned almost word for word.
 
 | Mode | Measure | Base model | Pilot adapter |
 | --- | --- | --- | --- |
