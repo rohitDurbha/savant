@@ -114,3 +114,87 @@ def test_the_model_sees_findings_by_measure_for_a_long_table():
     run = ask(_long_table(), "What matters?", client, settings=FAST)
     assert "long table" in client.seen[0] and "Measure Obesity" in client.seen[0]
     assert run.verified_pairs == {frozenset({"LocationAbbr", "DataValue"})}
+
+
+def _finding(kind, cols, effect, effect_name, status="confirmed", stat=None, note="", support=None):
+    from savant.engine import Finding
+    from savant.ledger import Test
+
+    t = Test(
+        "t", kind, cols, "m", effect if stat is None else stat, 0.0, effect, effect_name, 1000, note
+    )
+    t.support = support
+    return Finding(t, status)
+
+
+def test_insights_are_ordered_by_strength_and_coverage():
+    from savant.insights import rank
+
+    findings = [
+        _finding(
+            "segment",
+            ("Make", "Range"),
+            0.25,
+            "max_group_d",
+            note="Make=TESLA stands out, standardized difference +0.25 against the rest",
+            support=0.02,
+        ),
+        _finding("correlation", ("Year", "Range"), 0.55, "abs_rho", stat=0.55),
+        _finding("association", ("Type", "Eligible"), 0.30, "cramers_v"),
+    ]
+    insights = rank(findings)
+    assert [i.lead.test.columns for i in insights][0] == ("Year", "Range")
+    assert insights[-1].lead.test.columns == ("Make", "Range") or len(insights) < 3
+
+
+def test_findings_sharing_a_column_are_grouped_under_the_strongest():
+    from savant.insights import rank
+
+    findings = [
+        _finding("correlation", ("Year", "Range"), 0.55, "abs_rho", stat=0.55),
+        _finding(
+            "segment",
+            ("Make", "Range"),
+            0.5,
+            "max_group_d",
+            note="Make=CHEVROLET stands out, standardized difference +0.50 against the rest",
+            support=0.1,
+        ),
+        _finding("association", ("Type", "Eligible"), 0.7, "cramers_v"),
+    ]
+    insights = rank(findings)
+    leads = {i.lead.test.columns for i in insights}
+    assert ("Type", "Eligible") in leads and ("Year", "Range") in leads
+    year = next(i for i in insights if i.lead.test.columns == ("Year", "Range"))
+    assert [f.test.columns for f in year.related] == [("Make", "Range")]
+
+
+def test_headlines_are_plain_language_and_honest_about_direction_and_cause():
+    from savant.insights import headline
+
+    up = _finding("correlation", ("Model Year", "Electric Range"), 0.55, "abs_rho", stat=0.55)
+    down = _finding("trend", ("order_date", "Smoking"), 0.4, "abs_rho", stat=-0.4)
+    seg = _finding(
+        "segment",
+        ("Make", "Electric Range"),
+        0.53,
+        "max_group_d",
+        note="Make=CHEVROLET stands out, standardized difference +0.53 against the rest",
+        support=0.05,
+    )
+    near = _finding("segment", ("County", "Postal"), 0.99, "max_group_d", status="leakage")
+    assert headline(up) == "Model Year and Electric Range rise together."
+    assert headline(down) == "Smoking falls over order_date."
+    assert headline(seg) == "Electric Range is higher when Make is CHEVROLET than in other rows."
+    assert headline(near) == "County nearly determines Postal, likely by definition."
+    assert not any(w in headline(up).lower() for w in ("cause", "drive", "because"))
+
+
+def test_only_confirmed_and_near_deterministic_findings_become_insights():
+    from savant.insights import rank
+
+    findings = [
+        _finding("correlation", ("a", "b"), 0.5, "abs_rho", stat=0.5, status="exploratory"),
+        _finding("correlation", ("c", "d"), 0.5, "abs_rho", stat=0.5, status="explained_by_time"),
+    ]
+    assert rank(findings) == []

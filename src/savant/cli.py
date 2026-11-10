@@ -42,14 +42,17 @@ def cmd_analyze(a: argparse.Namespace) -> None:
     from .agent import findings_text
     from .engine import Settings, analyze
     from .ingest import load
-    from .longform import analyze_long, detect, findings_by_measure
+    from .longform import analyze_long, detect
 
     df = load(a.file) if a.no_clean else _load_clean(a.file, quiet=a.json)
     settings = Settings(stability_runs=a.stability_runs)
     layout = detect(df)
     if layout is not None and not a.json:
         print(f"This is a {layout.describe()}.\n")
-        print(findings_by_measure(analyze_long(df, settings), per_measure=10))
+        from .insights import insights_text, rank
+
+        for measure, res in analyze_long(df, settings).items():
+            print(f"Measure {measure}\n{insights_text(rank(res.findings, limit=4))}\n")
         return
     res = analyze(df, settings)
     if a.json:
@@ -61,10 +64,13 @@ def cmd_analyze(a: argparse.Namespace) -> None:
         }
         print(json.dumps(out, indent=1, default=str))
         return
+    from .insights import insights_text, rank
+
     print(f"{len(res.ledger)} tests run, dropped {res.dropped}")
     if not res.confirmed_split:
         print("The file is too small for a confirmation split, so every finding is exploratory.")
-    print(findings_text(res))
+    print("\nInsights\n" + insights_text(rank(res.findings)))
+    print("\nAll guarded findings\n" + findings_text(res, limit=50))
 
 
 def cmd_plant(a: argparse.Namespace) -> None:

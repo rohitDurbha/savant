@@ -145,6 +145,8 @@ def cat_num(df: pl.DataFrame, cat: str, num: str, min_support: float) -> Test | 
         n=sub.height,
         note=f"{cat}={top} stands out, standardized difference {d:+.2f} against the rest",
         explained=between / total if total else 0.0,
+        support=float(next(g.size for g, lab in zip(groups, labels, strict=True) if lab == top))
+        / every.size,
     )
 
 

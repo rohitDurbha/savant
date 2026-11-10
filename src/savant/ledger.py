@@ -22,6 +22,7 @@ class Test:
     n: int
     note: str = ""
     explained: float | None = None  # share of variance explained, where it applies
+    support: float | None = None  # share of rows in the group that stands out, for segments
 
     def to_dict(self) -> dict:
         return asdict(self)
