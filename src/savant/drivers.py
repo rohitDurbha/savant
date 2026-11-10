@@ -74,7 +74,18 @@ def _frame(df: pl.DataFrame, cols: list[str], cats: set[str]) -> pd.DataFrame:
 
 
 def _model(classify: bool, seed: int):
-    kwargs = {"categorical_features": "from_dtype", "random_state": seed, "max_iter": 200}
+    # Early stopping and mild regularization keep a boosted model from fitting noise when
+    # a table has only a few thousand rows and many unrelated columns.
+    kwargs = {
+        "categorical_features": "from_dtype",
+        "random_state": seed,
+        "max_iter": 300,
+        "early_stopping": True,
+        "learning_rate": 0.05,
+        "min_samples_leaf": 50,
+        "max_leaf_nodes": 15,
+        "l2_regularization": 1.0,
+    }
     return (
         HistGradientBoostingClassifier(**kwargs)
         if classify

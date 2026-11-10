@@ -294,3 +294,15 @@ def test_drivers_on_hard_null_tables_report_nothing():
         for target in ("spend", "wait_minutes"):
             found += [(t.id, target, d.feature) for d in drivers(t.table, target, FAST).drivers]
     assert found == []
+
+
+def test_a_moderate_driver_is_found_among_many_noise_columns():
+    from savant.drivers import drivers
+
+    hits = 0
+    for seed in range(3):
+        base = make_task("m", 2000, 0, seed=20 + seed).table
+        df, _ = plant(base, "correlation", 0, 0.37, np.random.default_rng(seed))
+        res = drivers(df, "signal_y0", FAST)
+        hits += bool(res.drivers) and res.drivers[0].feature == "signal_x0"
+    assert hits == 3
