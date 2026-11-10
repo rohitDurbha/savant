@@ -1,0 +1,20 @@
+{
+ "run": "Kaggle savant-00-baseline version 6, commit a50221d, 2026-11-09",
+ "bench_seed": 20261105,
+ "engine": {
+  "null_files": 50, "false_findings_per_null_file": 0.0,
+  "hard_null_files": 50, "false_findings_per_hard_null_file": 0.04, "hard_null_files_with_any_false_finding": 2,
+  "planted_files": 50, "recall": 0.882,
+  "recall_by_kind": {"association": 0.966, "correlation": 1.0, "segment": 0.722, "trend": 0.875},
+  "false_findings_in_planted_files": 0, "leaks_flagged": "31 of 31", "seconds_for_150_tables": 77
+ },
+ "agent": {
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "tables_per_mode": "3 null, 3 hard null, 4 planted",
+  "blind": {"grounded_answers": 0.5, "mean_rounds": 7.0, "mean_seconds": 131.4, "recall": 0.0,
+            "false_per_null_table": 0.667, "false_per_hard_null_table": 0.333, "false_per_planted_table": 5.5},
+  "guided": {"grounded_answers": 0.9, "mean_rounds": 2.5, "mean_seconds": 30.5, "failed_step_share": 0.286, "recall": 0.7,
+             "false_per_null_table": 0.0, "false_per_hard_null_table": 0.0, "false_per_planted_table": 0.25}
+ },
+ "known_issue": "Model code could not import scipy because BLAS reserved more address space than the 2 GB sandbox cap on Kaggle. Fixed after this run by pinning BLAS to one thread and raising the cap to 3 GB."
+}

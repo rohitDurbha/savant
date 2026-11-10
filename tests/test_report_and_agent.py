@@ -123,3 +123,23 @@ def test_pairs_are_parsed_from_an_answer():
         frozenset({"region", "score0"}),
     }
     assert parse_pairs("PAIR: none", ["price"]) == set()
+
+
+def test_sandbox_can_import_scipy_and_threaded_numpy(tmp_path):
+    task = make_task("s", 200, 0, seed=1)
+    path = tmp_path / "d.parquet"
+    task.table.write_parquet(path)
+    code = (
+        "from scipy import stats\n"
+        "r, p = stats.pearsonr(df['price'], df['quantity'])\n"
+        "emit('p', p)\n"
+        "emit('inv', float(np.linalg.inv(np.eye(300))[0, 0]))"
+    )
+    ex = sandbox.run(
+        code + "\nimport os\nemit('threads', os.environ.get('OPENBLAS_NUM_THREADS'))", path
+    )
+    assert ex.ok, ex.stderr
+    assert 0 <= ex.results["p"] <= 1
+    # BLAS reserves memory per thread, so a many-core machine exhausts the address limit
+    # unless threads are pinned. Kaggle hit this, so the pin is part of the contract.
+    assert ex.results["threads"] == "1"

@@ -63,11 +63,14 @@ def _limits(mem_mb: int, cpu_s: int):
     return apply
 
 
-def run(code: str, data_path: Path, timeout: int = 30, mem_mb: int = 2048) -> Execution:
+def run(code: str, data_path: Path, timeout: int = 30, mem_mb: int = 3072) -> Execution:
     with tempfile.TemporaryDirectory(prefix="savant-") as work:
         script = Path(work) / "step.py"
         script.write_text(f"DATA_PATH = {str(data_path)!r}\n{PRELUDE}\n{code}\n")
-        env = {"PATH": "/usr/bin:/bin", "HOME": work, "PYTHONHASHSEED": "0"}
+        # BLAS libraries reserve memory per thread, which breaks the address space limit
+        # on many-core machines, so model code runs single threaded.
+        threads = {k: "1" for k in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")}
+        env = {"PATH": "/usr/bin:/bin", "HOME": work, "PYTHONHASHSEED": "0", **threads}
         try:
             proc = subprocess.run(
                 [sys.executable, "-I", str(script)],

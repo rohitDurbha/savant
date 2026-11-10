@@ -41,3 +41,24 @@ The default false discovery rate stays at 0.05, which is now the loosest setting
 Segment differences remain the weakest pattern type at 70% recall, and the misses are all shifts below about 0.35 standard deviations in one of four groups. A 0.3 standard deviation shift was found in 3 of 12 tables at 2,000 rows and in 12 of 12 at 8,000 rows, so the limit is the amount of evidence in small tables and not the guards. Segment effects are now measured as the standout group against the rest, which matches the 0.2 bar in the design and tells the model which group differs.
 
 Three findings on planted tables first looked false, and each one turned out to be two metrics that both trend over time. They are real associations with a shared cause, so the grader counts them as derived. The engine should learn to explain such pairs through the shared time column, and that check is planned for Phase 1.
+
+## Phase 0 blind and guided baseline
+
+The second baseline ran on Kaggle on November 9, 2026, and its numbers live in `results/baseline-01.json`. The untrained Qwen3-4B model answered ten bench tables twice. In blind mode it saw only the data card, and in guided mode it also saw the engine's guarded findings. Every answer ended with PAIR lines, which were graded against the planted truth exactly like the engine.
+
+| Measure | Engine alone | Model blind | Model guided |
+| --- | --- | --- | --- |
+| Planted relationships found | 88% | 0% | 70% |
+| False findings per easy null table | 0 | 0.67 | 0 |
+| False findings per hard null table | 0.04 | 0.33 | 0 |
+| False findings per planted table | 0 | 5.5 | 0.25 |
+| Grounded answers | not applicable | 50% | 90% |
+| Seconds per table | under 1 | 131 | 31 |
+
+The blind model found none of the planted relationships and reported 22 false ones on a single table, while the guided model was faster, grounded and nearly clean. This is the clearest evidence so far for the core design, and it sets the target for training, which is a blind model that finds real patterns without inventing them.
+
+The engine reported two false findings on the 50 hard null tables in the bench, against none on the 100 hard null development tables. This bench result was seen after the settings were fixed, so it is recorded here and the settings are not changed because of it. A larger development sweep with more varied hard null tables is the honest way to study it.
+
+Model code could not import scipy on Kaggle, because BLAS libraries reserved more address space than the 2 GB sandbox cap. The sandbox now pins BLAS to one thread and allows 3 GB.
+
+The Phase 0 gate also asks for the loop to run on real files, and that has not happened yet. A few public datasets with a clear license, run through the engine and the guided model on Kaggle, will close Phase 0.
