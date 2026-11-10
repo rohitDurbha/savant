@@ -17,6 +17,7 @@ import polars as pl
 from . import sandbox
 from .engine import Analysis, Settings, analyze
 from .llm import Client
+from .profile import DataCard, build_card
 from .report import MissingResult, render, ungrounded_numbers
 
 ACTION = re.compile(r"<(Analyze|Code|Answer)>(.*?)</\1>", re.S)
@@ -32,8 +33,7 @@ Each reply holds an optional <Analyze>...</Analyze> block for reasoning, then ex
 Rules for the answer.
 1. Never type a number. Cite every figure as {{rN.name}}, where rN is the step that emitted it.
 2. Describe relationships as associations. Never say one column causes another.
-3. Prefer the guarded findings listed below, which already passed false discovery control,
-   confirmation on held-out rows and a stability check. Treat anything else as exploratory.
+3. {findings_rule}
 4. If the data cannot answer the question, say so plainly.
 
 Example of a valid exchange.
@@ -43,6 +43,22 @@ emit("rows", len(df))</Code>
 <Answer>The average price is {{r1.mean_price}} across {{r1.rows}} orders.</Answer>"""
 
 FEEDBACK_CHARS = 1500
+GUIDED_RULE = """Prefer the guarded findings listed below, which already passed false discovery
+   control, confirmation on held-out rows and a stability check. Treat the rest as exploratory."""
+BLIND_RULE = """Report a relationship only when your own code shows clear evidence for it, and say
+   nothing when the evidence is weak. Reporting noise as a finding is the worst mistake."""
+PAIR = re.compile(r"^\s*PAIR:\s*(.+?)\s*\|\s*(.+?)\s*$", re.I | re.M)
+
+
+def parse_pairs(text: str, columns: list[str]) -> set[frozenset[str]]:
+    """Column pairs named on PAIR lines, matched to real columns ignoring case."""
+    by_lower = {c.lower(): c for c in columns}
+    pairs = set()
+    for a, b in PAIR.findall(text or ""):
+        ca, cb = by_lower.get(a.strip().lower()), by_lower.get(b.strip().lower())
+        if ca and cb and ca != cb:
+            pairs.add(frozenset({ca, cb}))
+    return pairs
 
 
 @dataclass
@@ -85,9 +101,9 @@ def findings_text(analysis: Analysis) -> str:
     return "\n".join(rows)
 
 
-def _allowed_tokens(analysis: Analysis) -> set[str]:
-    tokens = {c.name for c in analysis.card.columns}
-    for c in analysis.card.columns:
+def _allowed_tokens(card: DataCard) -> set[str]:
+    tokens = {c.name for c in card.columns}
+    for c in card.columns:
         if c.kind in ("categorical", "boolean"):
             tokens.update(c.examples)
     return tokens
@@ -101,23 +117,35 @@ def ask(
     max_rounds: int = 10,
     step_timeout: int = 30,
     keep_messages: int = 8,
+    show_findings: bool = True,
 ) -> Run:
     """Answer one question about df.
 
     Only the system prompt, the opening request and the latest keep_messages messages are
     sent to the model each round, so memory and latency stay flat as a run goes on.
+    With show_findings off, the model gets only the data card and must find patterns
+    with its own code, which measures the model apart from the engine.
     """
-    analysis = analyze(df, settings)
+    if show_findings:
+        analysis = analyze(df, settings)
+        card = analysis.card
+        context = f"Guarded findings\n{findings_text(analysis)}\n\n"
+    else:
+        card, context = build_card(df), ""
     run = Run(question)
-    allowed = _allowed_tokens(analysis)
+    allowed = _allowed_tokens(card)
     results: dict[str, dict[str, object]] = {}
     last_error = ""
     messages = [
-        {"role": "system", "content": SYSTEM},
+        {
+            "role": "system",
+            "content": SYSTEM.replace(
+                "{findings_rule}", GUIDED_RULE if show_findings else BLIND_RULE
+            ),
+        },
         {
             "role": "user",
-            "content": f"Data card\n{analysis.card.to_text()}\n\nGuarded findings\n"
-            f"{findings_text(analysis)}\n\nQuestion\n{question}",
+            "content": f"Data card\n{card.to_text()}\n\n{context}Question\n{question}",
         },
     ]
     with tempfile.TemporaryDirectory(prefix="savant-data-") as tmp:

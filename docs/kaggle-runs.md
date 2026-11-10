@@ -8,3 +8,4 @@ Each row below records one Kaggle run of the notebooks. A run starts only when `
 | 2026-11-05 | 00-baseline, version 3 | Baseline with the interleaved time split, failed with out of memory after five tables |
 | 2026-11-05 | 00-baseline, version 4 | Failed in its first minute because it mounted the previous dataset version |
 | 2026-11-05 | 00-baseline, version 5 | Completed, results in results/baseline-00.json |
+| 2026-11-09 | 00-baseline, version 6 | Blind and guided modes graded by PAIR lines, pandas table, hard null tables in the bench |

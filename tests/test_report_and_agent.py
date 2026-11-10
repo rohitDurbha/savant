@@ -105,3 +105,21 @@ def test_repeated_error_gets_a_change_of_approach_hint():
     assert run.grounded
     assert "same error" not in client.seen[1]
     assert "same error" in client.seen[2]
+
+
+def test_blind_mode_hides_the_guarded_findings():
+    task = make_task("b", 2000, 3, seed=7)
+    client = Scripted(["<Answer>PAIR: none</Answer>"])
+    ask(task.table, "What matters?", client, show_findings=False)
+    assert "Guarded findings" not in client.seen[0]
+
+
+def test_pairs_are_parsed_from_an_answer():
+    from savant.agent import parse_pairs
+
+    text = "Price rises with quantity.\nPAIR: price | quantity\nPAIR: Region | score0\n"
+    assert parse_pairs(text, ["price", "quantity", "region", "score0"]) == {
+        frozenset({"price", "quantity"}),
+        frozenset({"region", "score0"}),
+    }
+    assert parse_pairs("PAIR: none", ["price"]) == set()
