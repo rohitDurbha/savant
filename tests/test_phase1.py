@@ -17,7 +17,7 @@ def _two_trends(seed: int) -> pl.DataFrame:
 
 def test_two_metrics_that_only_share_a_time_trend_are_explained_by_time():
     res = analyze(_two_trends(3), FAST)
-    status = {frozenset(f.test.columns): f.status for f in res.findings}
+    status = {frozenset(f.test.columns): f.status for f in res.findings if f.test.kind != "shift"}
     assert status[frozenset({"metric0", "metric1"})] == "explained_by_time"
     assert status[frozenset({"order_date", "metric0"})] == "confirmed"
     assert frozenset({"metric0", "metric1"}) not in {
@@ -198,3 +198,49 @@ def test_only_confirmed_and_near_deterministic_findings_become_insights():
         _finding("correlation", ("c", "d"), 0.5, "abs_rho", stat=0.5, status="explained_by_time"),
     ]
     assert rank(findings) == []
+
+
+def _with_shift(seed: int, size: float) -> tuple[pl.DataFrame, str]:
+    base = make_task("s", 3000, 0, seed=seed).table
+    rng = np.random.default_rng(seed)
+    days = base["order_date"].cast(pl.Int64).to_numpy()
+    cut = np.quantile(days, 0.6)
+    y = rng.normal(0, 1, base.height) + size * (days > cut)
+    return base.with_columns(pl.Series("signups", y * 10 + 100)), "signups"
+
+
+def test_a_level_shift_over_time_is_found_and_dated():
+    found = 0
+    for seed in range(4):
+        df, col = _with_shift(seed, 0.8)
+        res = analyze(df, FAST)
+        shifts = [f for f in res.reported if f.test.kind == "shift" and col in f.test.columns]
+        found += bool(shifts)
+        if shifts:
+            assert "around 2025" in shifts[0].test.note
+    assert found == 4
+
+
+def test_drifting_sensors_do_not_produce_level_shifts():
+    from savant.planted import make_hard_suite
+
+    shifts = [
+        f
+        for t in make_hard_suite(10, 2000, 70)
+        for f in analyze(t.table, FAST).reported
+        if f.test.kind == "shift"
+    ]
+    assert shifts == []
+
+
+def test_unusual_values_are_counted_in_the_data_card_without_dropping_rows():
+    from savant.profile import build_card
+
+    rng = np.random.default_rng(0)
+    price = np.round(rng.uniform(45, 55, 1000), 2)
+    price[[3, 50, 700]] = [400.0, 380.0, -200.0]
+    card = build_card(pl.DataFrame({"price": price}))
+    c = card.column("price")
+    assert c.stats["unusual"] == 3
+    assert "unusual=3" in card.to_text()
+    assert card.rows == 1000

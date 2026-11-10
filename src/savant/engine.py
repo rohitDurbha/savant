@@ -28,6 +28,7 @@ class Settings:
             "abs_rho": 0.1,
             "max_group_d": 0.2,
             "cramers_v": 0.1,
+            "shift_d": 0.3,  # above 0.2, because the largest of many cuts is kept
         }
     )
     min_support: float = 0.01
@@ -132,7 +133,7 @@ class Views:
         self._entity: dict[int, pl.DataFrame] = {}
 
     def frame(self, part: pl.DataFrame, kind: str) -> pl.DataFrame:
-        if not self.card.entity_column or kind == "trend":
+        if not self.card.entity_column or kind in ("trend", "shift"):
             return part
         key = id(part)
         if key not in self._entity:

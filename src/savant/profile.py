@@ -110,12 +110,18 @@ def _stats(s: pl.Series, kind: str) -> dict[str, float]:
     clean = s.drop_nulls().cast(pl.Float64)
     if clean.is_empty():
         return {}
+    median = float(clean.median())
+    mad = float((clean - median).abs().median())
+    # Iglewicz and Hoaglin: a modified z score above 3.5 marks an unusual value. It is a
+    # note for the reader, and no row is dropped because of it.
+    unusual = int(((0.6745 * (clean - median) / mad).abs() > 3.5).sum()) if mad else 0
     return {
         "mean": float(clean.mean()),
         "std": float(clean.std() or 0.0),
         "min": float(clean.min()),
-        "median": float(clean.median()),
+        "median": median,
         "max": float(clean.max()),
+        "unusual": float(unusual),
     }
 
 

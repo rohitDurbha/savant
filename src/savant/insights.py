@@ -14,7 +14,8 @@ from dataclasses import dataclass, field
 
 from .engine import Finding
 
-LARGE = {"abs_rho": 0.5, "cramers_v": 0.5, "max_group_d": 0.8}
+LARGE = {"abs_rho": 0.5, "cramers_v": 0.5, "max_group_d": 0.8, "shift_d": 0.8}
+SHIFT = re.compile(r"level shift around (\S+)")
 STANDOUT = re.compile(r"^(.*?)=(.*) stands out, standardized difference ([+-][\d.]+)")
 NEAR_WEIGHT = 0.5  # definitions are worth knowing, but they are rarely the news
 
@@ -50,6 +51,10 @@ def headline(f: Finding) -> str:
         return f"{a} and {b} rise together." if t.statistic > 0 else f"As {a} rises, {b} falls."
     if t.kind == "trend":
         return f"{b} {'rises' if t.statistic > 0 else 'falls'} over {a}."
+    if t.kind == "shift":
+        m = SHIFT.search(t.note)
+        when = f" around {m.group(1)}" if m else ""
+        return f"{b} shifted {'up' if t.statistic > 0 else 'down'}{when}."
     if t.kind == "segment":
         m = STANDOUT.match(t.note)
         if m:

@@ -111,6 +111,61 @@ def num_num(
     )
 
 
+SHIFT_CUTS = np.arange(0.1, 0.91, 0.05)  # candidate cut points, as shares of the time order
+
+
+def shift(df: pl.DataFrame, time_col: str, num: str) -> Test | None:
+    """A level shift, where a metric moves to a new level at some point in time.
+
+    Every candidate cut is tried and the largest standardized difference is kept, so its
+    p-value is multiplied by the number of cuts. Autocorrelation left after the step is
+    taken into account, and a series with fewer than 30 effective rows is not tested.
+    """
+    frame = df.select(time_col, num).drop_nulls().sort(time_col)
+    y = frame[num].cast(pl.Float64).to_numpy()
+    n = y.size
+    if n < 40 or np.ptp(y) == 0:
+        return None
+    best_k, best_d, best_t = 0, 0.0, 0.0
+    for share in SHIFT_CUTS:
+        k = int(n * share)
+        before, after = y[:k], y[k:]
+        pooled = np.sqrt(
+            ((before.size - 1) * before.var(ddof=1) + (after.size - 1) * after.var(ddof=1))
+            / (n - 2)
+        )
+        if pooled == 0:
+            continue
+        d = (after.mean() - before.mean()) / pooled
+        t = d / np.sqrt(1 / before.size + 1 / after.size)
+        if abs(d) > abs(best_d):
+            best_k, best_d, best_t = k, float(d), float(t)
+    if best_k == 0:
+        return None
+    step = np.where(np.arange(n) < best_k, y[:best_k].mean(), y[best_k:].mean())
+    r1 = max(_lag1(y - step), 0.0)
+    n_eff = n * (1 - r1) / (1 + r1)
+    if n_eff < MIN_EFFECTIVE_ROWS:
+        return None
+    t_eff = best_t * np.sqrt(n_eff / n)
+    p = min(1.0, 2 * sps.t.sf(abs(t_eff), n_eff - 2) * SHIFT_CUTS.size)
+    when = frame[time_col][best_k]
+    total = float(((y - y.mean()) ** 2).sum())
+    return Test(
+        id="",
+        kind="shift",
+        columns=(time_col, num),
+        method="step",
+        statistic=best_d,
+        p_value=float(p),
+        effect=abs(best_d),
+        effect_name="shift_d",
+        n=n,
+        note=f"level shift around {str(when)[:10]}, standardized difference {best_d:+.2f}",
+        explained=float(((step - y.mean()) ** 2).sum()) / total if total else 0.0,
+    )
+
+
 def cat_num(df: pl.DataFrame, cat: str, num: str, min_support: float) -> Test | None:
     sub = df.select([cat, num]).drop_nulls()
     n_all = sub.height
@@ -208,6 +263,8 @@ def run(
         return num_num(df, a, b, kind, time_col)
     if kind == "segment":
         return cat_num(df, a, b, min_support)
+    if kind == "shift":
+        return shift(df, a, b)
     if kind == "association":
         return cat_cat(df, a, b)
     raise ValueError(kind)
@@ -227,4 +284,5 @@ def plan(card: DataCard) -> list[tuple[str, str, str]]:
     ]
     if card.time_column:
         tests += [("trend", card.time_column, n) for n in nums]
+        tests += [("shift", card.time_column, n) for n in nums]
     return tests

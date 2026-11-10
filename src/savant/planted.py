@@ -19,7 +19,7 @@ REGIONS = ["north", "south", "east", "west", "central"]
 CHANNELS = ["web", "store", "phone", "partner"]
 SEGMENTS = ["consumer", "small_business", "enterprise"]
 PAYMENTS = ["card", "cash", "invoice", "wallet"]
-PLANT_KINDS = ("correlation", "segment", "trend", "association", "leak")
+PLANT_KINDS = ("correlation", "segment", "trend", "association", "leak", "shift")
 
 
 @dataclass
@@ -164,6 +164,13 @@ def plant(df: pl.DataFrame, kind: str, k: int, strength: float, rng: np.random.G
         a, b = f"tier{k}", f"status{k}"
         df = df.with_columns(pl.Series(a, a_vals), pl.Series(b, b_vals))
         return df, Plant(kind, (a, b), strength)
+    if kind == "shift":
+        days = df["order_date"].cast(pl.Date).cast(pl.Int64).to_numpy()
+        cut = np.quantile(days, rng.uniform(0.3, 0.7))
+        y = rng.normal(0, 1, n) + strength * (days > cut)
+        num = f"level{k}"
+        df = df.with_columns(pl.Series(num, y * 12 + 60))
+        return df, Plant(kind, ("order_date", num), strength)
     if kind == "leak":
         y = rng.normal(0, 1, n)
         a, b = f"outcome{k}", f"outcome{k}_adjusted"
@@ -179,6 +186,7 @@ STRENGTH = {
     "trend": (0.1, 0.5),
     "association": (0.1, 0.5),
     "leak": (1.0, 1.0),
+    "shift": (0.3, 1.0),
 }
 
 

@@ -95,3 +95,14 @@ Reading the saved transcripts showed three more problems, which are fixed with t
 ## Phase 0 result
 
 The Phase 0 gate is met. The loop runs end to end on real files on Kaggle, and the baseline scores for the engine, the blind model and the guided model are recorded in `results/`. The fixes from the transcripts of the second real data run have tests but have not yet run on Kaggle, so the first Phase 1 run will confirm them.
+
+## Phase 1 progress
+
+Work on Phase 1 started on November 10, 2026, and each piece below began with a failing test.
+
+1. Pairs that only move together because both trend over time are retested with time held fixed, using ranks with the straight-line time trend removed. A pair whose link disappears is marked as explained by time, and derived findings on the development suite fell from three to zero.
+2. Long tables such as the CDC indicators are detected from a measure column and a value column. The most common measures are analyzed one at a time with one value type each, confidence limits and footnotes are set aside, and each measure's false discovery rate is divided by the number of measures.
+3. Guarded findings are ranked into a short list of insights. Each score is the effect against the conventional large effect for its measure, times an impact that grows with the share of rows covered, and findings that share a column are grouped under the strongest one with a plain sentence that never claims a cause.
+4. Level shifts over time are tested at seventeen candidate cuts, with the p-value multiplied by the number of cuts and corrected for autocorrelation left after the step. Unusual values are counted in the data card with the Iglewicz and Hoaglin rule, and no row is dropped because of them.
+
+Level shifts are now one of six planted pattern types, so the development suite and the held-out bench both changed composition from this commit on. The sweep in `results/calibration-dev.json` at the default settings found no false findings on 100 easy and 100 hard null tables, recall of 90% overall and 95% for level shifts, and all 50 planted leaks flagged.
