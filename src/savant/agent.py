@@ -24,7 +24,8 @@ ACTION = re.compile(r"<(Analyze|Code|Answer)>(.*?)</\1>", re.S)
 SYSTEM = """You are Savant, a careful data analyst. You work in steps.
 
 Each reply holds an optional <Analyze>...</Analyze> block for reasoning, then exactly one action.
-- <Code>python</Code> runs Python. A Polars DataFrame named df is already loaded, with numpy as np.
+- <Code>python</Code> runs Python. A pandas DataFrame named df is already loaded, with pandas as pd
+  and numpy as np.
   Call emit("name", value) for every number you may want to cite. Keep each step short.
 - <Answer>text</Answer> ends the analysis. Aim to answer within four steps.
 
@@ -37,7 +38,7 @@ Rules for the answer.
 
 Example of a valid exchange.
 <Code>emit("mean_price", df["price"].mean())
-emit("rows", df.height)</Code>
+emit("rows", len(df))</Code>
 <Execute>{"step": "r1", "ok": true, "emitted": {"mean_price": 41.2, "rows": 2000}}</Execute>
 <Answer>The average price is {{r1.mean_price}} across {{r1.rows}} orders.</Answer>"""
 
@@ -110,6 +111,7 @@ def ask(
     run = Run(question)
     allowed = _allowed_tokens(analysis)
     results: dict[str, dict[str, object]] = {}
+    last_error = ""
     messages = [
         {"role": "system", "content": SYSTEM},
         {
@@ -143,6 +145,8 @@ def ask(
                 run.steps.append(Step(step_id, body, ex.ok, ex.results, "" if ex.ok else error))
                 if ex.ok:
                     results[step_id] = ex.results
+                repeated = not ex.ok and error and error == last_error
+                last_error = "" if ex.ok else error
                 feedback = {
                     "step": step_id,
                     "ok": ex.ok,
@@ -150,6 +154,11 @@ def ask(
                     "stdout": ex.stdout[-800:],
                     "error": "" if ex.ok else error,
                 }
+                if repeated:
+                    feedback["hint"] = (
+                        "This is the same error as your last step. Change approach, "
+                        "for example use plain pandas methods such as groupby, mean and corr."
+                    )
                 payload = json.dumps(feedback, default=str)[:FEEDBACK_CHARS]
                 messages.append({"role": "user", "content": f"<Execute>{payload}</Execute>"})
                 continue

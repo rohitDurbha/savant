@@ -27,9 +27,11 @@ def test_sandbox_returns_emitted_results(tmp_path):
     task = make_task("s", 200, 0, seed=1)
     path = tmp_path / "d.parquet"
     task.table.write_parquet(path)
-    ex = sandbox.run('emit("rows", df.height)\nemit("mean", df["price"].mean())', path)
-    assert ex.ok and ex.results["rows"] == 200
-    assert isinstance(ex.results["mean"], float)
+    code = 'emit("rows", len(df))\nemit("r", df["price"].corr(df["quantity"]))'
+    ex = sandbox.run(code, path)
+    assert ex.ok, ex.stderr
+    assert ex.results["rows"] == 200
+    assert isinstance(ex.results["r"], float)
 
 
 def test_sandbox_times_out(tmp_path):
@@ -63,7 +65,7 @@ def test_agent_rejects_typed_numbers_then_accepts_grounded_answer():
     task = make_task("a", 600, 0, seed=2)
     client = Scripted(
         [
-            '<Analyze>count rows</Analyze><Code>emit("n", df.height)</Code>',
+            '<Analyze>count rows</Analyze><Code>emit("n", len(df))</Code>',
             "<Answer>There are 600 orders.</Answer>",
             "<Answer>There are {{r1.n}} orders.</Answer>",
         ]
@@ -81,9 +83,25 @@ def test_model_context_stays_bounded_over_a_long_run():
     class Counting:
         def complete(self, messages):
             sizes.append(len(messages))
-            return '<Code>emit("n", df.height)</Code>'
+            return '<Code>emit("n", len(df))</Code>'
 
     run = ask(task.table, "How many orders?", Counting(), max_rounds=10, keep_messages=4)
     assert not run.grounded and run.rounds == 10
     assert max(sizes) <= 2 + 4
     assert "last step" in run.transcript[-3]["content"]
+
+
+def test_repeated_error_gets_a_change_of_approach_hint():
+    task = make_task("e", 600, 0, seed=2)
+    client = Scripted(
+        [
+            "<Code>df.nope()</Code>",
+            "<Code>df.nope()</Code>",
+            '<Code>emit("n", len(df))</Code>',
+            "<Answer>There are {{r3.n}} orders.</Answer>",
+        ]
+    )
+    run = ask(task.table, "How many orders?", client)
+    assert run.grounded
+    assert "same error" not in client.seen[1]
+    assert "same error" in client.seen[2]

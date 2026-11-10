@@ -20,8 +20,8 @@ from pathlib import Path
 MARKER = "__SAVANT_RESULT__"
 PRELUDE = f'''
 import json as _json, math as _math
-import polars as pl
 import numpy as np
+import pandas as pd
 
 def _clean(v):
     if isinstance(v, (np.generic,)):
@@ -40,7 +40,7 @@ def emit(name, value):
     """Record a result the report may cite as {{{{step.name}}}}."""
     print("{MARKER}" + _json.dumps({{"name": str(name), "value": _clean(value)}}))
 
-df = pl.read_parquet(DATA_PATH)
+df = pd.read_parquet(DATA_PATH)
 '''
 
 

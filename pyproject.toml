@@ -11,6 +11,8 @@ dependencies = [
   "scipy>=1.11",
   "polars>=1.0",
   "fastexcel>=0.11",
+  "pandas>=2.1",    # models write pandas far more reliably than Polars
+  "pyarrow>=14",    # pandas needs it to read the Parquet handoff file
 ]
 
 [project.optional-dependencies]
