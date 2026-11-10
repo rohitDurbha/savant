@@ -56,7 +56,9 @@ class DataCard:
             lines.append(f"rows repeat per {self.entity_column}, so findings are per entity")
         for c in self.columns:
             ex = ", ".join(c.examples[:max_examples])
-            stats = " ".join(f"{k}={v:.4g}" for k, v in c.stats.items())
+            stats = " ".join(
+                f"{k}={v:.4g}" for k, v in c.stats.items() if k != "placeholder_zeros" or v
+            )
             lines.append(
                 f"- {c.name} [{c.kind}, {c.dtype}] missing={c.missing_share:.1%} "
                 f"unique={c.unique} {stats} e.g. {ex}".rstrip()

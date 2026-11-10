@@ -138,24 +138,25 @@ def _allowed_tokens(card: DataCard) -> set[str]:
     return tokens
 
 
-def ask(
+@dataclass
+class Opening:
+    """The first two messages of a run and what the engine found before the model starts."""
+
+    messages: list[dict[str, str]]
+    card: DataCard
+    guarded: set[frozenset[str]]
+    analysis: Analysis | None = None
+
+
+def prepare(
     df: pl.DataFrame,
     question: str,
-    client: Client,
     settings: Settings | None = None,
-    max_rounds: int = 10,
-    step_timeout: int = 30,
-    keep_messages: int = 8,
     show_findings: bool = True,
-) -> Run:
-    """Answer one question about df.
-
-    Only the system prompt, the opening request and the latest keep_messages messages are
-    sent to the model each round, so memory and latency stay flat as a run goes on.
-    With show_findings off, the model gets only the data card and must find patterns
-    with its own code, which measures the model apart from the engine.
-    """
+) -> Opening:
+    """The system prompt and opening request, built the same way for runs and training."""
     guarded: set[frozenset[str]] = set()
+    analysis = None
     layout = detect(df) if show_findings else None
     if layout is not None:
         # A long table is analyzed one measure at a time, and the model is told so.
@@ -182,10 +183,6 @@ def ask(
         }
     else:
         card, context = build_card(df), ""
-    run = Run(question)
-    allowed = _allowed_tokens(card)
-    results: dict[str, dict[str, object]] = {}
-    last_error = ""
     messages = [
         {
             "role": "system",
@@ -198,6 +195,52 @@ def ask(
             "content": f"Data card\n{card.to_text()}\n\n{context}Question\n{question}",
         },
     ]
+    return Opening(messages, card, guarded, analysis)
+
+
+def execute_message(
+    step_id: str, ex: sandbox.Execution, error: str, repeated: bool = False
+) -> dict[str, str]:
+    """What the model is told after its code runs."""
+    feedback = {
+        "step": step_id,
+        "ok": ex.ok,
+        "emitted": ex.results,
+        "stdout": ex.stdout[-800:],
+        "error": "" if ex.ok else error,
+    }
+    if repeated:
+        feedback["hint"] = (
+            "This is the same error as your last step. Change approach, "
+            "for example use plain pandas methods such as groupby, mean and corr."
+        )
+    payload = json.dumps(feedback, default=str)[:FEEDBACK_CHARS]
+    return {"role": "user", "content": f"<Execute>{payload}</Execute>"}
+
+
+def ask(
+    df: pl.DataFrame,
+    question: str,
+    client: Client,
+    settings: Settings | None = None,
+    max_rounds: int = 10,
+    step_timeout: int = 30,
+    keep_messages: int = 8,
+    show_findings: bool = True,
+) -> Run:
+    """Answer one question about df.
+
+    Only the system prompt, the opening request and the latest keep_messages messages are
+    sent to the model each round, so memory and latency stay flat as a run goes on.
+    With show_findings off, the model gets only the data card and must find patterns
+    with its own code, which measures the model apart from the engine.
+    """
+    opening = prepare(df, question, settings, show_findings)
+    card, guarded, messages = opening.card, opening.guarded, opening.messages
+    run = Run(question)
+    allowed = _allowed_tokens(card)
+    results: dict[str, dict[str, object]] = {}
+    last_error = ""
     with tempfile.TemporaryDirectory(prefix="savant-data-") as tmp:
         data_path = Path(tmp) / "data.parquet"
         df.write_parquet(data_path)
@@ -230,20 +273,7 @@ def ask(
                     results[step_id] = ex.results
                 repeated = not ex.ok and error and error == last_error
                 last_error = "" if ex.ok else error
-                feedback = {
-                    "step": step_id,
-                    "ok": ex.ok,
-                    "emitted": ex.results,
-                    "stdout": ex.stdout[-800:],
-                    "error": "" if ex.ok else error,
-                }
-                if repeated:
-                    feedback["hint"] = (
-                        "This is the same error as your last step. Change approach, "
-                        "for example use plain pandas methods such as groupby, mean and corr."
-                    )
-                payload = json.dumps(feedback, default=str)[:FEEDBACK_CHARS]
-                messages.append({"role": "user", "content": f"<Execute>{payload}</Execute>"})
+                messages.append(execute_message(step_id, ex, error, bool(repeated)))
                 continue
             stray = ungrounded_numbers(body, allowed)
             if stray:

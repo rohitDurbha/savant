@@ -140,6 +140,23 @@ def cmd_bench(a: argparse.Namespace) -> None:
     print(text)
 
 
+def cmd_traces(a: argparse.Namespace) -> None:
+    import time
+
+    from .traces import make_traces, write_traces
+
+    started = time.time()
+    records = make_traces(a.n, a.seed, workers=a.workers)
+    summary = write_traces(records, Path(a.out))
+    kept = [r for r in records if r["kept"] and r.get("recall") is not None]
+    summary["mean_recall_of_kept_planted_traces"] = (
+        round(sum(r["recall"] for r in kept) / len(kept), 3) if kept else None
+    )
+    summary["seed"] = a.seed
+    summary["seconds"] = round(time.time() - started)
+    print(json.dumps(summary, indent=1))
+
+
 def cmd_ask(a: argparse.Namespace) -> None:
     from .agent import ask
     from .llm import OpenAICompatible
@@ -206,6 +223,13 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("--workers", type=int, default=2)
     s.add_argument("--out")
     s.set_defaults(fn=cmd_bench)
+
+    s = sub.add_parser("traces", help="write verified training conversations from dev tables")
+    s.add_argument("out")
+    s.add_argument("--n", type=int, default=400, help="development tables to try")
+    s.add_argument("--seed", type=int, default=3_000_000)
+    s.add_argument("--workers", type=int, default=4)
+    s.set_defaults(fn=cmd_traces)
 
     s = sub.add_parser("ask", help="ask a question through an OpenAI-compatible model server")
     s.add_argument("file")
