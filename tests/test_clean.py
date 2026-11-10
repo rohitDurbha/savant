@@ -1,0 +1,114 @@
+from datetime import date
+
+import polars as pl
+
+from savant.clean import clean, parse_number
+
+
+def test_number_words_and_formats_parse():
+    assert parse_number("thirty") == 30
+    assert parse_number("two hundred") == 200
+    assert parse_number("SIXTY THOUSAND") == 60000
+    assert parse_number("one hundred twenty five") == 125
+    assert parse_number("$1,200.50") == 1200.5
+    assert parse_number("45%") == 45
+    assert parse_number("1.2k") == 1200
+    assert parse_number("-3") == -3
+    assert parse_number("abc") is None
+    assert parse_number("12 apples") is None
+
+
+def test_missing_placeholders_become_nulls():
+    df = pl.DataFrame({"email": ["a@x.com", "nan", "", " ", "NaN", " NAN ", "n/a", "b@y.org"]})
+    out, report = clean(df, drop_duplicates=False)
+    assert out["email"].null_count() == 6
+    assert any(c.action == "missing placeholders" and c.count == 6 for c in report.changes)
+
+
+def test_numbers_stored_as_text_become_numbers_and_every_conversion_is_logged():
+    df = pl.DataFrame({"age": ["25", "thirty", "40", "nan", "35", "50", "25", "40", "35", "50"]})
+    out, report = clean(df, drop_duplicates=False)
+    assert out["age"].dtype.is_numeric()
+    assert out["age"].to_list() == [25, 30, 40, None, 35, 50, 25, 40, 35, 50]
+    words = next(c for c in report.changes if c.action == "number words")
+    assert words.count == 1 and "thirty" in words.examples[0]
+
+
+def test_mixed_date_formats_become_dates_with_month_first_evidence():
+    values = ["April 5, 2018", "2020/02/20", "01/15/2020", "03-25-2019", "2019.12.01", "nan"]
+    out, _ = clean(pl.DataFrame({"joined": values * 3}), drop_duplicates=False)
+    assert out["joined"].dtype == pl.Date
+    assert out["joined"].to_list()[:6] == [
+        date(2018, 4, 5),
+        date(2020, 2, 20),
+        date(2020, 1, 15),
+        date(2019, 3, 25),
+        date(2019, 12, 1),
+        None,
+    ]
+
+
+def test_day_first_dates_are_read_day_first():
+    out, _ = clean(pl.DataFrame({"restocked": ["20/12/2022", "05/03/2023", "15/01/2023"] * 4}))
+    assert out["restocked"].to_list()[:3] == [
+        date(2022, 12, 20),
+        date(2023, 3, 5),
+        date(2023, 1, 15),
+    ]
+
+
+def test_ambiguous_day_month_order_is_flagged_not_guessed():
+    out, report = clean(pl.DataFrame({"d": ["01/02/2020", "03/04/2021", "05/06/2022"] * 4}))
+    assert out["d"].dtype == pl.String
+    assert any(c.action == "ambiguous dates" for c in report.changes)
+
+
+def test_category_spellings_are_unified_to_the_most_common_one():
+    vals = ["Sales"] * 6 + ["sales", "SALES ", " Sales"] + ["HR"] * 5 + ["Salse"]
+    out, report = clean(pl.DataFrame({"dept": vals}), drop_duplicates=False)
+    assert set(out["dept"].to_list()) == {"Sales", "HR"}
+    # " Sales" is fixed by trimming, "sales" and "SALES" by case, "Salse" as a typo.
+    changed = {c.action: c.count for c in report.changes}
+    assert changed["unified case and spacing"] == 2
+    assert changed["merged near duplicates"] == 1
+
+
+def test_distinct_short_categories_are_never_merged():
+    out, _ = clean(pl.DataFrame({"grade": ["A", "B", "C", "D", "F"] * 4}))
+    assert sorted(set(out["grade"].to_list())) == ["A", "B", "C", "D", "F"]
+
+
+def test_padding_is_trimmed():
+    out, _ = clean(pl.DataFrame({"name": [" grace ", " david ", "eve"] * 4}))
+    assert set(out["name"].to_list()) == {"grace", "david", "eve"}
+
+
+def test_exact_duplicate_rows_are_removed_and_counted():
+    df = pl.DataFrame({"a": ["1", "1", "2"], "b": ["x", "x", "y"]})
+    out, report = clean(df)
+    assert out.height == 2
+    assert any(c.action == "removed duplicate rows" and c.count == 1 for c in report.changes)
+
+
+def test_float_nan_in_numeric_columns_becomes_null():
+    out, _ = clean(pl.DataFrame({"price": [9.99, float("nan"), 19.99]}))
+    assert out["price"].null_count() == 1
+
+
+def test_report_reads_as_plain_text():
+    _, report = clean(pl.DataFrame({"age": ["25", "thirty", "nan"] * 4}))
+    text = report.to_text()
+    assert "age" in text and "number words" in text
+
+
+def test_raw_csv_read_lets_the_cleaner_decide_types(tmp_path):
+    from savant.ingest import load
+
+    path = tmp_path / "hr.csv"
+    path.write_text(
+        "Age,Salary,Joined\n25,50000,2020/02/20\nthirty, NAN ,01/15/2020\n40,SIXTY THOUSAND,nan\n"
+    )
+    out, _ = clean(load(path, raw=True))
+    assert out["Age"].to_list() == [25, 30, 40]
+    assert out["Salary"].to_list() == [50000, None, 60000]
+    assert out["Joined"].to_list() == [date(2020, 2, 20), date(2020, 1, 15), None]

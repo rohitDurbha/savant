@@ -21,12 +21,31 @@ def cmd_profile(a: argparse.Namespace) -> None:
     print(build_card(load(a.file)).to_text())
 
 
+def _load_clean(path: str, quiet: bool = False):
+    from .clean import clean
+    from .ingest import load
+
+    df, report = clean(load(path, raw=True))
+    if not quiet:
+        print(report.to_text(), end="\n\n")
+    return df
+
+
+def cmd_clean(a: argparse.Namespace) -> None:
+    df = _load_clean(a.file)
+    if a.out:
+        Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+        df.write_parquet(a.out) if a.out.endswith(".parquet") else df.write_csv(a.out)
+        print(f"wrote {df.height} rows to {a.out}")
+
+
 def cmd_analyze(a: argparse.Namespace) -> None:
     from .agent import findings_text
     from .engine import Settings, analyze
     from .ingest import load
 
-    res = analyze(load(a.file), Settings(stability_runs=a.stability_runs))
+    df = load(a.file) if a.no_clean else _load_clean(a.file, quiet=a.json)
+    res = analyze(df, Settings(stability_runs=a.stability_runs))
     if a.json:
         out = {
             "tests": len(res.ledger),
@@ -75,10 +94,9 @@ def cmd_calibrate(a: argparse.Namespace) -> None:
 
 def cmd_ask(a: argparse.Namespace) -> None:
     from .agent import ask
-    from .ingest import load
     from .llm import OpenAICompatible
 
-    run = ask(load(a.file), a.question, OpenAICompatible(a.base_url, a.model))
+    run = ask(_load_clean(a.file), a.question, OpenAICompatible(a.base_url, a.model))
     print(run.rendered or f"No grounded answer after {run.rounds} rounds.")
 
 
@@ -91,8 +109,14 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("file")
     s.set_defaults(fn=cmd_profile)
 
-    s = sub.add_parser("analyze", help="run the guarded scan on a file")
+    s = sub.add_parser("clean", help="clean a file and print the report of every change")
     s.add_argument("file")
+    s.add_argument("--out", help="write the cleaned table as CSV or Parquet")
+    s.set_defaults(fn=cmd_clean)
+
+    s = sub.add_parser("analyze", help="clean a file, then run the guarded scan")
+    s.add_argument("file")
+    s.add_argument("--no-clean", action="store_true", help="skip the cleaning step")
     s.add_argument("--json", action="store_true")
     s.add_argument("--stability-runs", type=int, default=100)
     s.set_defaults(fn=cmd_analyze)

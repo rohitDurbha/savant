@@ -24,8 +24,13 @@ class IngestError(ValueError):
     """Raised when a file cannot be read safely."""
 
 
-def load(path: str | Path, max_bytes: int = MAX_BYTES) -> pl.DataFrame:
-    """Load CSV, TSV, Parquet, JSON, JSON Lines or Excel into a DataFrame."""
+def load(path: str | Path, max_bytes: int = MAX_BYTES, raw: bool = False) -> pl.DataFrame:
+    """Load CSV, TSV, Parquet, JSON, JSON Lines or Excel into a DataFrame.
+
+    With raw set, CSV and TSV columns are read as text so the cleaner decides every type
+    itself. A guessed type would otherwise turn a column with "thirty" in it into text
+    or quietly read "NaN" as a float.
+    """
     path = Path(path)
     if not path.is_file():
         raise IngestError(f"{path} is not a file")
@@ -37,6 +42,9 @@ def load(path: str | Path, max_bytes: int = MAX_BYTES) -> pl.DataFrame:
     suffix = path.suffix.lower()
     if suffix == ".json":
         return from_records(json.loads(path.read_text()))
+    if raw and suffix in (".csv", ".tsv"):
+        sep = "\t" if suffix == ".tsv" else ","
+        return pl.read_csv(path, separator=sep, infer_schema=False)
     reader = READERS.get(suffix)
     if reader is None:
         raise IngestError(f"unsupported file type {suffix or '(none)'}")
