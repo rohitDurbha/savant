@@ -94,6 +94,7 @@ LABELS = {
     "confirmed": "confirmed",
     "leakage": "near-deterministic, likely a definition or a leak",
     "explained_by_time": "moves together only through a shared time trend",
+    "zero_artifact": "rests on zeros that likely mean unknown",
 }
 
 
@@ -111,7 +112,7 @@ def findings_text(analysis: Analysis, limit: int = 15) -> str:
         )
 
     near = strongest("leakage")[:3]  # always leave room to say which columns define others
-    timed = strongest("explained_by_time")[:2]
+    timed = strongest("explained_by_time")[:2] + strongest("zero_artifact")[:2]
     shown = strongest("confirmed")[: limit - len(near) - len(timed)] + near + timed
     rows = []
     for f in shown:

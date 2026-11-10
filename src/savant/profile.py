@@ -34,6 +34,7 @@ class DataCard:
     time_column: str | None
     entity_column: str | None = None
     duplicates: list[tuple[str, str]] = field(default_factory=list)  # (duplicate, kept)
+    placeholder_zeros: dict[str, str] = field(default_factory=dict)  # column -> evidence
 
     def column(self, name: str) -> ColumnCard:
         return next(c for c in self.columns if c.name == name)
@@ -60,6 +61,8 @@ class DataCard:
                 f"- {c.name} [{c.kind}, {c.dtype}] missing={c.missing_share:.1%} "
                 f"unique={c.unique} {stats} e.g. {ex}".rstrip()
             )
+        for col, why in self.placeholder_zeros.items():
+            lines.append(f"zeros in {col} likely mean unknown, {why}")
         if self.duplicates:
             same = "; ".join(f"{d} repeats {k}" for d, k in self.duplicates)
             lines.append(f"duplicate columns, tested once: {same}")
@@ -115,6 +118,17 @@ def _stats(s: pl.Series, kind: str) -> dict[str, float]:
     # Iglewicz and Hoaglin: a modified z score above 3.5 marks an unusual value. It is a
     # note for the reader, and no row is dropped because of it.
     unusual = int(((0.6745 * (clean - median) / mad).abs() > 3.5).sum()) if mad else 0
+    # A spike at exactly zero with nothing just above it, in a column whose values are
+    # usually large, looks like a placeholder for unknown. Small counts with real zeros,
+    # where ones and twos are common, never qualify.
+    positive = clean.filter(clean > 0)
+    zero_share = float((clean == 0).mean())
+    placeholder = 0.0
+    if zero_share >= 0.05 and positive.len() >= 20:
+        pos_median = float(positive.median())
+        low = float(positive.quantile(0.01))
+        if pos_median >= 10 and low >= 0.1 * pos_median:
+            placeholder = zero_share
     return {
         "mean": float(clean.mean()),
         "std": float(clean.std() or 0.0),
@@ -122,6 +136,7 @@ def _stats(s: pl.Series, kind: str) -> dict[str, float]:
         "median": median,
         "max": float(clean.max()),
         "unusual": float(unusual),
+        "placeholder_zeros": placeholder,
     }
 
 
@@ -165,6 +180,29 @@ def duplicate_columns(
     return sorted(dupes.items(), key=lambda kv: order[kv[0]])
 
 
+def placeholder_evidence(df: pl.DataFrame, card: DataCard) -> dict[str, str]:
+    """Why each flagged column's zeros look like a stand-in for unknown."""
+    out = {}
+    for c in card.columns:
+        if not c.stats.get("placeholder_zeros"):
+            continue
+        why = f"{c.stats['placeholder_zeros']:.0%} are exactly zero with nothing just above it"
+        zero = df[c.name] == 0
+        for other in df.columns:
+            if df[other].dtype != pl.String:
+                continue
+            at_zero = df.filter(zero)[other].drop_nulls()
+            if at_zero.is_empty():
+                continue
+            label = at_zero.mode().sort().first()
+            elsewhere = df.filter(~zero)[other]
+            if (at_zero == label).mean() >= 0.8 and (elsewhere == label).mean() <= 0.05:
+                why += f", and they line up with {other} = {label}"
+                break
+        out[c.name] = why
+    return out
+
+
 def build_card(df: pl.DataFrame) -> DataCard:
     rows = df.height
     cols = []
@@ -189,6 +227,7 @@ def build_card(df: pl.DataFrame) -> DataCard:
     entities = card.of_kind("entity")
     card.entity_column = entities[0] if entities else None
     card.dependencies = functional_dependencies(df, card.of_kind("categorical"))
+    card.placeholder_zeros = placeholder_evidence(df, card)
     card.duplicates = duplicate_columns(
         df, card.of_kind("categorical"), card.of_kind("numeric"), card.dependencies
     )

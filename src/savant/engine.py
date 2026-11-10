@@ -177,7 +177,7 @@ def analyze(df: pl.DataFrame, s: Settings | None = None) -> Analysis:
     explore, confirm = split(df, card, s)
     views = Views(card)
     ledger = scan(explore, views, s)
-    dropped = {"fdr": 0, "effect": 0, "confirmation": 0, "stability": 0, "time": 0}
+    dropped = {"fdr": 0, "effect": 0, "confirmation": 0, "stability": 0, "time": 0, "zeros": 0}
     candidates: list[Finding] = []
     discovered = {t.id for t in ledger.discoveries(s.q, s.dependent)}
     for t in ledger.tests:
@@ -225,5 +225,28 @@ def analyze(df: pl.DataFrame, s: Settings | None = None) -> Analysis:
                     f"is weak (partial rho {r:+.2f})"
                 )
                 dropped["time"] += 1
+
+    for f in candidates:
+        zero_cols = [c for c in f.test.columns if c in card.placeholder_zeros]
+        if f.status != "confirmed" or not zero_cols:
+            continue
+        sub = df.filter(pl.all_horizontal([pl.col(c) != 0 for c in zero_cols]))
+        rerun = views.run(sub, f.test.kind, *f.test.columns, s)
+        sign = np.sign(f.test.statistic) if f.test.method == "spearman" else None
+        names = " and ".join(zero_cols)
+        if _passes(rerun, s, s.q, sign):
+            f.test.note = (f.test.note + "; " if f.test.note else "") + (
+                f"holds with zeros set aside in {names}"
+            )
+        else:
+            f.status = "zero_artifact"
+            detail = (
+                f" (rho {rerun.statistic:+.2f})" if rerun and rerun.method == "spearman" else ""
+            )
+            f.test.note = (
+                f"zeros in {names} likely mean unknown, and with them set aside the link does "
+                f"not hold the same way{detail}"
+            )
+            dropped["zeros"] += 1
 
     return Analysis(card, ledger, candidates, dropped, confirm is not None)
