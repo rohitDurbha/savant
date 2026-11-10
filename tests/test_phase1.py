@@ -357,3 +357,28 @@ def test_a_real_link_between_drifting_series_survives_prewhitening():
     y = x + rng.normal(0, 1.0, n)  # y tracks x step by step
     res = analyze(pl.DataFrame({"day": days, "x": x, "y": y}), FAST)
     assert ("x", "y") in {f.test.columns for f in res.reported}
+
+
+def test_long_table_with_counts_next_to_percentages_is_still_detected():
+    from savant.longform import detect
+
+    df = _long_table()
+    # Real CDC files mix raw counts in the tens of thousands with percentages.
+    rng = np.random.default_rng(1)
+    big = pl.DataFrame(
+        {
+            "YearStart": rng.integers(2010, 2022, 400),
+            "LocationAbbr": rng.choice(["S00", "S01", "S02"], 400),
+            "Stratification1": rng.choice(["Male", "Female"], 400),
+            "Question": "Hospitalizations",
+            "DataValueType": "Number",
+            "DataValue": rng.lognormal(9, 2.5, 400).round(0),
+            "LowConfidenceLimit": None,
+            "HighConfidenceLimit": None,
+            "DataValueFootnoteSymbol": "",
+        },
+        schema_overrides={"LowConfidenceLimit": pl.Float64, "HighConfidenceLimit": pl.Float64},
+    )
+    mixed = pl.concat([df, big.select(df.columns)], how="vertical_relaxed")
+    layout = detect(mixed)
+    assert layout is not None and layout.measure == "Question"

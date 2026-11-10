@@ -126,3 +126,9 @@ The held-out bench ran once at the default settings on November 10, 2026, and it
 Both null rates sit under 5% and recall rose by four points, so the gate passes. The bench composition changed between the two phases when level shifts became a planted pattern, so the two columns are close but not identical tests.
 
 The one false finding linked two slowly drifting sensors in a table with repeat customers. It was studied after the bench result was seen, and no setting was changed because of it. On 200 fresh hard tables from a new development seed the same pair was never reported, and across every hard table checked so far the rate is one in 350, which is well inside what the false discovery rate allows. Two regression tests now cover independent slow drifts and a real link between drifting series.
+
+## Phase 1 real data reports
+
+The first CPU run of the report notebook on November 10, 2026, wrote HTML reports for all four savant-real files, and it showed two problems. The CDC table was not detected as long, because the check that the measure explains the value failed when a few raw counts in the tens of thousands sat beside percentages. Detection now relies on the measure and value column names and on each measure repeating across many rows, with a test that mixes counts and percentages.
+
+The electric vehicle report says that range falls as model year rises, which is true in this file and misleading about cars. The file records an electric range of zero when the range has not been researched, which is the case for most recent models, so a placeholder zero bends the result. Detecting zeros that stand for unknown values, and flagging insights that rest on them, is the first item for the next phase.

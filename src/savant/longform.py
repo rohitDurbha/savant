@@ -61,13 +61,11 @@ def detect(df: pl.DataFrame) -> LongLayout | None:
     if not measures or not values:
         return None
     measure, value = measures[0], values[0]
-    # The measure must shape the value, or the column is only a label.
-    groups = df.select(measure, value).drop_nulls().group_by(measure).agg(pl.col(value).mean())
-    total = df[value].drop_nulls()
-    if total.len() < 20 or groups.height < 2:
-        return None
-    between = groups[value].std() or 0.0
-    if between < 0.5 * (total.std() or 1.0):
+    # A long table repeats each measure across many places and times. A check on how much
+    # the measure explains the value failed on real CDC data, where a few raw counts in the
+    # tens of thousands sit next to percentages, so the layout itself is checked.
+    sizes = df[measure].drop_nulls().value_counts()["count"]
+    if df[value].drop_nulls().len() < 20 or sizes.len() < 2 or sizes.median() < 10:
         return None
     others = [c for c in df.columns if c != measure]
     per = df.group_by(measure).agg([pl.col(c).n_unique().alias(c) for c in others])
