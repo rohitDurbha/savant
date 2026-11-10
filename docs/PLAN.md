@@ -132,3 +132,9 @@ The one false finding linked two slowly drifting sensors in a table with repeat 
 The first CPU run of the report notebook on November 10, 2026, wrote HTML reports for all four savant-real files, and it showed two problems. The CDC table was not detected as long, because the check that the measure explains the value failed when a few raw counts in the tens of thousands sat beside percentages. Detection now relies on the measure and value column names and on each measure repeating across many rows, with a test that mixes counts and percentages.
 
 The electric vehicle report says that range falls as model year rises, which is true in this file and misleading about cars. The file records an electric range of zero when the range has not been researched, which is the case for most recent models, so a placeholder zero bends the result. Detecting zeros that stand for unknown values, and flagging insights that rest on them, is the first item for the next phase.
+
+The second CPU run detected the CDC table as long and analyzed its eight most common measures one at a time. The findings read as public health statements, such as arthritis and asthma mortality being higher among people aged 65 and older. For asthma mortality the most common value type was likely a raw count, so a state with a large population stood out for its size. Value types are now chosen in the order age-adjusted rate, crude rate, rate, prevalence, percent, mean and median, with raw counts used only when nothing else exists.
+
+## Phase 1 result
+
+The Phase 1 gate is met on the held-out bench, and every new piece also ran on real files. Two known issues carry into Phase 2, which are placeholder zeros such as an unresearched vehicle range and the guided model fixes that still await a Kaggle run.

@@ -85,6 +85,19 @@ def detect(df: pl.DataFrame) -> LongLayout | None:
     return LongLayout(measure, value, variants, ignored)
 
 
+# Rates compare places of different sizes fairly, and raw counts mostly measure population,
+# so a measure's value type is chosen in this order before falling back to the most common.
+PREFERRED_TYPES = ("age-adjusted", "crude rate", "rate", "prevalence", "percent", "mean", "median")
+
+
+def _choose(levels: list[str]) -> str:
+    for word in PREFERRED_TYPES:
+        hit = sorted(lv for lv in levels if word in lv.lower())
+        if hit:
+            return hit[0]
+    return levels[0]
+
+
 def split(
     df: pl.DataFrame, layout: LongLayout, top: int = 8, min_rows: int = 100
 ) -> dict[str, tuple[pl.DataFrame, list[str]]]:
@@ -95,10 +108,12 @@ def split(
         sub = df.filter(pl.col(layout.measure) == m)
         notes = []
         for v in layout.variants:
-            mode = sub[v].drop_nulls().mode().sort().first()
-            if mode is not None and sub[v].n_unique() > 1:
-                sub = sub.filter(pl.col(v) == mode)
-                notes.append(f"{v} kept at {mode}")
+            counts = sub[v].drop_nulls().cast(pl.String).value_counts(sort=True)
+            if counts.height < 2:
+                continue
+            keep = _choose(counts[v].to_list())  # most common first, so ties keep it
+            sub = sub.filter(pl.col(v).cast(pl.String) == keep)
+            notes.append(f"{v} kept at {keep}")
         sub = sub.drop([layout.measure, *layout.variants, *layout.ignored])
         out[str(m)] = (sub, notes)
     return out

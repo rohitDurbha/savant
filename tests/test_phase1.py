@@ -382,3 +382,16 @@ def test_long_table_with_counts_next_to_percentages_is_still_detected():
     mixed = pl.concat([df, big.select(df.columns)], how="vertical_relaxed")
     layout = detect(mixed)
     assert layout is not None and layout.measure == "Question"
+
+
+def test_rates_are_preferred_over_raw_counts_within_a_measure():
+    from savant.longform import detect, split
+
+    df = _long_table()
+    counts = df.with_columns(
+        pl.lit("Number").alias("DataValueType"), (pl.col("DataValue") * 1000).alias("DataValue")
+    )
+    mixed = pl.concat([df, counts, counts])  # counts are now the most common type
+    layout = detect(mixed)
+    _, notes = split(mixed, layout)["Obesity"]
+    assert "DataValueType kept at Age-adjusted Prevalence" in notes

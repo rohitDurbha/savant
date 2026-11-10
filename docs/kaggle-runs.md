@@ -12,4 +12,4 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-10 | 01-real, version 1 | Completed, exposed six problems listed in PLAN.md, results in results/real-01.json |
 | 2026-11-10 | 01-real, version 2 | Completed, results in results/real-02.json |
 | 2026-11-10 | 02-reports, version 1 | Completed, CDC table missed as long, range placeholder zeros noted |
-| 2026-11-10 | 02-reports, version 2 | Same reports after the long table detection fix, CPU only |
+| 2026-11-10 | 02-reports, version 2 | Completed, CDC table analyzed by measure, counts noted as a problem |
