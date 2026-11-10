@@ -13,3 +13,4 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-10 | 01-real, version 2 | Completed, results in results/real-02.json |
 | 2026-11-10 | 02-reports, version 1 | Completed, CDC table missed as long, range placeholder zeros noted |
 | 2026-11-10 | 02-reports, version 2 | Completed, CDC table analyzed by measure, counts noted as a problem |
+| 2026-11-10 | 03-finetune, version 1 | First LoRA pilot on verified conversations from development seeds |
