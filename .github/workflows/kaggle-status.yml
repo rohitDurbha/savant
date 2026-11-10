@@ -60,6 +60,19 @@ jobs:
               print(n, e)
           for code, err in examples:
               print("---- code\n" + code + "\n---- error\n" + err)
+          print("-- endings of runs without a grounded answer")
+          for line in open(sys.argv[1]):
+              run = json.loads(line)
+              msgs = run.get("transcript") or []
+              if not msgs or run.get("grounded") is True:
+                  continue
+              tail = [m for m in msgs if m["role"] == "assistant"][-2:]
+              notes = [m["content"][:300] for m in msgs[-4:] if m["role"] == "user"]
+              print("#### " + str(run.get("task")) + " " + str(run.get("mode", "")))
+              for m in tail:
+                  print("assistant: " + m["content"][:600])
+              for n in notes:
+                  print("feedback: " + n)
           PY
             done
             for f in out/${slug}/*.log; do
