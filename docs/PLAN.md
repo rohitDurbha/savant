@@ -150,3 +150,21 @@ A local trial on 40 development tables kept all 60 conversations it wrote, 17 of
 The pilot trains a LoRA adapter in half precision with the peft library and a short custom loop, which only scores the tokens the analyst wrote. This replaces the QLoRA and Unsloth plan for the pilot, because it avoids two extra installs on Kaggle and a 4B model fits on one 16 GB card with gradient checkpointing. The pilot is then measured on the same ten bench tables as the Phase 0 baseline, in blind and guided modes.
 
 Two limits are known before the pilot runs. Training and bench tables come from the same generator with the same column names, so a gain on the bench may overstate the gain on real files, and a real data check follows the pilot. The pilot also trains only the guided mode, so blind mode is expected to stay near the baseline.
+
+## Phase 2 first pilot result
+
+The first pilot ran on November 10, 2026, on two T4 GPUs, and it did not beat the base model in guided mode. The generator kept 357 of 358 conversations, and 333 of them trained a LoRA adapter for 41 steps in about 38 minutes. Held-out loss fell from 2.82 to 0.03. That fall mostly shows that the scripted answers repeat a small set of sentence templates, which the adapter learned almost word for word.
+
+| Mode | Measure | Base model | Pilot adapter |
+| --- | --- | --- | --- |
+| Guided | Grounded answers | 0.9 | 0.8 |
+| Guided | Recall on planted pairs | 0.70 | 0.36 |
+| Guided | Mean rounds | 2.5 | 4.2 |
+| Guided | False pairs per table, null and hard null and planted | 0, 0, 0.25 | 0, 0, 0 |
+| Blind | Grounded answers | 0.5 | 0.7 |
+| Blind | Recall on planted pairs | 0 | 0 |
+| Blind | False pairs per planted table | 5.5 | 0 |
+
+The adapter made the model more cautious in both modes, and blind mode stopped inventing relationships. In guided mode it lost recall for three reasons that the transcripts show clearly. Every training conversation was one clean code step followed by an answer, so the adapter never saw how to recover when its own code failed, and 32% of its code steps failed on dates, text columns and the scipy result object. The adapter also copied numbers from the findings list into its answers, and the grounding check then rejected those answers until the last round. Finally, ten tables with eleven planted pairs make a small test, so a gap of this size can come from a few tables.
+
+The next pilot should add conversations where a first code step fails and the second step fixes it, using the error types seen here. It should also lower the learning rate or the number of steps, because the loss curve flattened by step 30. The evaluation should grow to at least twenty planted tables in guided mode, so that one or two tables cannot decide the result. These changes come from reading the pilot transcripts on bench tables, so they are recorded here as choices made after seeing bench results.

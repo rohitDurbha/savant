@@ -1,0 +1,100 @@
+{
+ "traces": {
+  "attempted": 358,
+  "kept": 357,
+  "relationships": {
+   "attempted": 240,
+   "kept": 239
+  },
+  "lookup": {
+   "attempted": 118,
+   "kept": 118
+  },
+  "relationship_answers_with_pair_none": 108,
+  "mean_recall_of_kept_planted_traces": 0.848,
+  "seconds": 171
+ },
+ "training": {
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "examples": 333,
+  "held_out": 24,
+  "skipped": {
+   "too_long": 0,
+   "template": 0
+  },
+  "steps": 41,
+  "lr": 0.0001,
+  "lora_r": 16,
+  "held_out_loss_before": 2.8206,
+  "held_out_loss_after": 0.0324,
+  "loss_curve": [
+   [
+    5,
+    1.8224
+   ],
+   [
+    10,
+    0.8639
+   ],
+   [
+    15,
+    0.577
+   ],
+   [
+    20,
+    0.3425
+   ],
+   [
+    25,
+    0.1626
+   ],
+   [
+    30,
+    0.0824
+   ],
+   [
+    35,
+    0.0572
+   ],
+   [
+    40,
+    0.0443
+   ],
+   [
+    41,
+    0.0563
+   ]
+  ],
+  "seconds": 2259
+ },
+ "agent": {
+  "model": "Qwen/Qwen3-4B-Instruct-2507 with the pilot adapter",
+  "blind": {
+   "tables": 10,
+   "grounded_answers": 0.7,
+   "mean_rounds": 6.2,
+   "mean_seconds": 63.15,
+   "failed_step_share": 0.444,
+   "recall": 0.0,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.333,
+   "false_per_planted_table": 0.0,
+   "unverified_claims": 0,
+   "errors": 0
+  },
+  "guided": {
+   "tables": 10,
+   "grounded_answers": 0.8,
+   "mean_rounds": 4.2,
+   "mean_seconds": 48.62,
+   "failed_step_share": 0.32,
+   "recall": 0.364,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "unverified_claims": 0,
+   "errors": 0
+  }
+ },
+ "note": "Kaggle 03-finetune version 2 on two T4 GPUs, the same ten bench tables per mode as results/baseline-01.json, measured once"
+}

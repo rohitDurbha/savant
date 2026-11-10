@@ -15,3 +15,4 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-10 | 02-reports, version 2 | Completed, CDC table analyzed by measure, counts noted as a problem |
 | 2026-11-10 | 03-finetune, version 1 | First LoRA pilot, failed before training because the image had an old torchao that peft refuses, after the generator kept 357 of 358 conversations |
 | 2026-11-10 | 03-finetune, version 2 | Second pilot with torchao removed before peft loads |
+| 2026-11-10 | 03-finetune, version 2 | Completed, adapter trained, guided recall fell below the base model, results in results/finetune-01.json |
