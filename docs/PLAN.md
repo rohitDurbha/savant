@@ -138,3 +138,15 @@ The second CPU run detected the CDC table as long and analyzed its eight most co
 ## Phase 1 result
 
 The Phase 1 gate is met on the held-out bench, and every new piece also ran on real files. Two known issues carry into Phase 2, which are placeholder zeros such as an unresearched vehicle range and the guided model fixes that still await a Kaggle run.
+
+## Phase 2 progress
+
+Phase 2 started on November 10, 2026, and its first item closed the placeholder zero issue from Phase 1. A numeric column is flagged when its zeros form a spike with almost nothing just above zero, in a column whose typical value is large, and the data card names any text column whose label lines up with the zero rows. Every confirmed finding on such a column is tested again with the zeros set aside. A finding that weakens, fails or flips direction is marked as resting on zeros that likely mean unknown and is never reported, while a finding that holds keeps a note saying so. A test built to look like the electric vehicle file reproduces the false fall in range and now drops it, and a second test confirms that real zeros in counts are left alone.
+
+Training conversations are written by code. A scripted analyst reads the same opening the model reads, writes pandas code that measures each guarded finding, runs that code in the sandbox and answers with placeholders and PAIR lines. A conversation is kept only when its code ran, every number in the answer resolves to an emitted result and no named pair is false in the planted truth. A weak plant that the engine missed is simply not named, which is honest given the evidence, so those conversations are kept and their recall is recorded. Lookup questions such as which region has the highest average price are included too, and their answers say whether the guarded scan confirmed the gap. The generator refuses any seed within the bench range, and the pilot uses seeds from 3,000,000 upward.
+
+A local trial on 40 development tables kept all 60 conversations it wrote, 17 of which correctly answered with PAIR: none. The kept planted conversations name 81% of the planted pairs, which matches the engine because the analyst only repeats what the engine confirmed.
+
+The pilot trains a LoRA adapter in half precision with the peft library and a short custom loop, which only scores the tokens the analyst wrote. This replaces the QLoRA and Unsloth plan for the pilot, because it avoids two extra installs on Kaggle and a 4B model fits on one 16 GB card with gradient checkpointing. The pilot is then measured on the same ten bench tables as the Phase 0 baseline, in blind and guided modes.
+
+Two limits are known before the pilot runs. Training and bench tables come from the same generator with the same column names, so a gain on the bench may overstate the gain on real files, and a real data check follows the pilot. The pilot also trains only the guided mode, so blind mode is expected to stay near the baseline.

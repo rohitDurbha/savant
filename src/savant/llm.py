@@ -54,7 +54,13 @@ class OpenAICompatible:
 class Transformers:
     """Local generation with Hugging Face transformers, used inside Kaggle notebooks."""
 
-    def __init__(self, model_id: str, max_new_tokens: int = 1500, load_in_4bit: bool = False):
+    def __init__(
+        self,
+        model_id: str,
+        max_new_tokens: int = 1500,
+        load_in_4bit: bool = False,
+        adapter: str | None = None,
+    ):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -65,6 +71,11 @@ class Transformers:
             kwargs["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True)
         self.tok = AutoTokenizer.from_pretrained(model_id)
         self.model = AutoModelForCausalLM.from_pretrained(model_id, **kwargs)
+        if adapter:
+            from peft import PeftModel
+
+            # Merging the trained LoRA weights keeps generation as fast as the base model.
+            self.model = PeftModel.from_pretrained(self.model, adapter).merge_and_unload()
         self.max_new_tokens = max_new_tokens
 
     def complete(self, messages: list[dict[str, str]]) -> str:
