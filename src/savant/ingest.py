@@ -65,3 +65,17 @@ def from_records(payload: object) -> pl.DataFrame:
     if not isinstance(payload, list) or not all(isinstance(r, dict) for r in payload):
         raise IngestError("JSON must be a list of objects")
     return pl.from_dicts(payload, infer_schema_length=None)
+
+
+def read_complete_lines(path: Path, max_bytes: int = MAX_BYTES) -> tuple[bytes, int]:
+    """The file's bytes up to its last line break, and how many bytes followed it."""
+    size = path.stat().st_size
+    if size > max_bytes:
+        raise IngestError(
+            f"{path.name} is {size / 1e6:.1f} MB, above the {max_bytes / 1e6:.0f} MB cap"
+        )
+    data = path.read_bytes()
+    if not data or data.endswith(b"\n"):
+        return data, 0
+    end = data.rfind(b"\n")
+    return (data[: end + 1], len(data) - end - 1) if end >= 0 else (data, 0)

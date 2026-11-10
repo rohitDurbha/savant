@@ -7,10 +7,12 @@ month first, leaves the column alone and says so.
 
 from __future__ import annotations
 
+import io
 import re
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from pathlib import Path
 
 import polars as pl
 
@@ -44,6 +46,7 @@ class Report:
     rows_in: int
     rows_out: int = 0
     changes: list[Change] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
     def add(self, column: str, action: str, count: int, examples: list[str]) -> None:
         if count:
@@ -51,6 +54,7 @@ class Report:
 
     def to_text(self) -> str:
         lines = [f"cleaning report, {self.rows_in} rows in and {self.rows_out} rows out"]
+        lines += [f"- note: {n}" for n in self.notes]
         for c in self.changes:
             ex = "; ".join(c.examples)
             lines.append(
@@ -274,3 +278,30 @@ def clean(df: pl.DataFrame, drop_duplicates: bool = True) -> tuple[pl.DataFrame,
     report.add("all columns", "removed duplicate rows", out.height - deduped.height, [])
     report.rows_out = deduped.height
     return deduped, report
+
+
+def clean_file(path: str | Path) -> tuple[pl.DataFrame, Report]:
+    """Read a file as raw text where possible, then clean it.
+
+    A CSV that does not end with a line break was usually cut off at a size limit, so its
+    last line is a partial row. That line is dropped before parsing and the report says
+    so, because a half row would otherwise be read silently with truncated values.
+    """
+    from .ingest import load, read_complete_lines
+
+    path = Path(path)
+    note = None
+    if path.suffix.lower() in (".csv", ".tsv"):
+        data, cut = read_complete_lines(path)
+        sep = "\t" if path.suffix.lower() == ".tsv" else ","
+        df = pl.read_csv(io.BytesIO(data), separator=sep, infer_schema=False)
+        if cut:
+            note = (
+                f"the file was cut off mid-row, so its last partial line of {cut} bytes was dropped"
+            )
+    else:
+        df = load(path, raw=True)
+    out, report = clean(df)
+    if note:
+        report.notes.append(note)
+    return out, report

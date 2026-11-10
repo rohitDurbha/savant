@@ -112,3 +112,29 @@ def test_raw_csv_read_lets_the_cleaner_decide_types(tmp_path):
     assert out["Age"].to_list() == [25, 30, 40]
     assert out["Salary"].to_list() == [50000, None, 60000]
     assert out["Joined"].to_list() == [date(2020, 2, 20), date(2020, 1, 15), None]
+
+
+def test_a_file_cut_off_mid_row_drops_the_partial_row_and_says_so(tmp_path):
+    from savant.clean import clean_file
+
+    cut = tmp_path / "cut.csv"
+    cut.write_text("name,phone\nann,123-456-7890\nbob,555-555")
+    df, report = clean_file(cut)
+    assert df["name"].to_list() == ["ann"]
+    assert "cut off" in report.to_text()
+
+    quoted = tmp_path / "quoted.csv"
+    quoted.write_text('a,b\n1,"x y"\n2,"unfinished')
+    df, report = clean_file(quoted)
+    assert df["a"].to_list() == [1]
+    assert "cut off" in report.to_text()
+
+
+def test_a_complete_file_keeps_every_row(tmp_path):
+    from savant.clean import clean_file
+
+    ok = tmp_path / "ok.csv"
+    ok.write_text("name,age\nann,30\nbob,thirty\n")
+    df, report = clean_file(ok)
+    assert df["age"].to_list() == [30, 30]
+    assert "cut off" not in report.to_text()

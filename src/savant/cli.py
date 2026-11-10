@@ -22,10 +22,9 @@ def cmd_profile(a: argparse.Namespace) -> None:
 
 
 def _load_clean(path: str, quiet: bool = False):
-    from .clean import clean
-    from .ingest import load
+    from .clean import clean_file
 
-    df, report = clean(load(path, raw=True))
+    df, report = clean_file(path)
     if not quiet:
         print(report.to_text(), end="\n\n")
     return df
