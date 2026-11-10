@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 import polars as pl
 
-KINDS = ("numeric", "categorical", "datetime", "boolean", "id", "text")
+KINDS = ("numeric", "categorical", "datetime", "boolean", "id", "entity", "text")
 ID_HINTS = ("id", "uuid", "key", "code", "number", "no")
 
 
@@ -28,6 +28,7 @@ class DataCard:
     columns: list[ColumnCard]
     dependencies: list[tuple[str, str]]
     time_column: str | None
+    entity_column: str | None = None
 
     def column(self, name: str) -> ColumnCard:
         return next(c for c in self.columns if c.name == name)
@@ -40,6 +41,8 @@ class DataCard:
         lines = [f"rows {self.rows}, columns {len(self.columns)}"]
         if self.time_column:
             lines.append(f"time column {self.time_column}")
+        if self.entity_column:
+            lines.append(f"rows repeat per {self.entity_column}, so findings are per entity")
         for c in self.columns:
             ex = ", ".join(c.examples[:max_examples])
             stats = " ".join(f"{k}={v:.4g}" for k, v in c.stats.items())
@@ -66,6 +69,11 @@ def _kind(s: pl.Series, rows: int) -> str:
     named_like_id = any(t in ID_HINTS for t in tokens) or name.endswith("id")
     if dtype.is_integer() and looks_like_id and named_like_id:
         return "id"
+    # An id-like name whose values repeat marks rows that belong to the same thing, such
+    # as one customer. Such rows are not independent, so the column is never tested.
+    repeats = max(20, 0.02 * rows) < unique < 0.95 * rows
+    if named_like_id and repeats and (dtype.is_integer() or dtype == pl.String):
+        return "entity"
     if dtype.is_numeric():
         return "categorical" if unique <= 2 else "numeric"
     if looks_like_id:
@@ -127,5 +135,7 @@ def build_card(df: pl.DataFrame) -> DataCard:
     card = DataCard(rows=rows, columns=cols, dependencies=[], time_column=None)
     times = card.of_kind("datetime")
     card.time_column = times[0] if times else None
+    entities = card.of_kind("entity")
+    card.entity_column = entities[0] if entities else None
     card.dependencies = functional_dependencies(df, card.of_kind("categorical"))
     return card

@@ -55,7 +55,7 @@ jobs:
           rm -rf kaggle/bench/tasks kaggle/bench/*.whl
           pip wheel -q . --no-deps -w kaggle/bench
           # Seed 20261105 is the held-out bench. Tuning uses other seeds only.
-          savant plant kaggle/bench/tasks --null 50 --planted 50 --rows 2000 --seed 20261105
+          savant plant kaggle/bench/tasks --null 50 --planted 50 --hard 50 --rows 2000 --seed 20261105
           echo "${GITHUB_SHA}" > kaggle/bench/BUILD
           sed -i "s/EXPECTED_BUILD/${GITHUB_SHA}/g" kaggle/notebooks/*/notebook.ipynb
           sed -i "s/KAGGLE_USERNAME/${KAGGLE_USERNAME}/g" kaggle/bench/dataset-metadata.json \

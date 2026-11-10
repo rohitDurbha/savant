@@ -16,6 +16,7 @@ from .ledger import Test
 from .profile import DataCard
 
 MIN_GROUP = 5
+MIN_EFFECTIVE_ROWS = 30  # below this a time-ordered test has too little independent evidence
 
 
 def _numeric(df: pl.DataFrame, col: str) -> np.ndarray:
@@ -25,13 +26,54 @@ def _numeric(df: pl.DataFrame, col: str) -> np.ndarray:
     return s.cast(pl.Float64).to_numpy()
 
 
-def num_num(df: pl.DataFrame, a: str, b: str, kind: str = "correlation") -> Test | None:
-    x, y = _numeric(df, a), _numeric(df, b)
+def _lag1(x: np.ndarray) -> float:
+    x = x - x.mean()
+    denom = float((x * x).sum())
+    return float((x[:-1] * x[1:]).sum() / denom) if denom and x.size > 2 else 0.0
+
+
+def _detrended_ranks(v: np.ndarray) -> np.ndarray:
+    """Ranks of v with their straight-line drift over time order removed."""
+    r = sps.rankdata(v)
+    pos = np.arange(v.size, dtype=float)
+    slope, intercept = np.polyfit(pos, r, 1)
+    return r - (slope * pos + intercept)
+
+
+def effective_n(x: np.ndarray, y: np.ndarray, kind: str) -> float:
+    """Rows worth of independent evidence when both series are in time order.
+
+    Slowly drifting series repeat much of their last value, so n rows carry far less
+    information than n independent draws. This uses the lag one autocorrelation of the
+    detrended ranks, the Bartlett correction for a correlation between two series and the
+    usual first order correction for a trend.
+    """
+    n = float(x.size)
+    ry = _lag1(_detrended_ranks(y))
+    rx = 1.0 if kind == "trend" else _lag1(_detrended_ranks(x))
+    rho = max(rx * ry, 0.0)
+    return max(3.0, n * (1 - rho) / (1 + rho))
+
+
+def num_num(
+    df: pl.DataFrame, a: str, b: str, kind: str = "correlation", time_col: str | None = None
+) -> Test | None:
+    frame = df.sort(time_col, nulls_last=True) if time_col else df
+    x, y = _numeric(frame, a), _numeric(frame, b)
     ok = ~(np.isnan(x) | np.isnan(y))
     x, y = x[ok], y[ok]
     if x.size < 10 or np.ptp(x) == 0 or np.ptp(y) == 0:
         return None
     rho, p = sps.spearmanr(x, y)
+    note = ""
+    if time_col:
+        n_eff = effective_n(x, y, kind)
+        if n_eff < MIN_EFFECTIVE_ROWS:
+            return None
+        if n_eff < x.size - 1:
+            t = rho * np.sqrt((n_eff - 2) / max(1e-12, 1 - rho**2))
+            p = max(p, 2 * sps.t.sf(abs(t), n_eff - 2))
+            note = f"autocorrelation leaves about {n_eff:.0f} independent rows"
     return Test(
         id="",
         kind=kind,
@@ -42,6 +84,7 @@ def num_num(df: pl.DataFrame, a: str, b: str, kind: str = "correlation") -> Test
         effect=abs(float(rho)),
         effect_name="abs_rho",
         n=int(x.size),
+        note=note,
     )
 
 
@@ -57,14 +100,13 @@ def cat_num(df: pl.DataFrame, cat: str, num: str, min_support: float) -> Test | 
     if len(keep) < 2:
         return None
     sub = sub.filter(pl.col(cat).is_in(keep))
-    groups = [g[num].cast(pl.Float64).to_numpy() for _, g in sub.group_by(cat)]
+    parts = sub.group_by(cat, maintain_order=True)
+    labels = [str(key[0]) for key, _ in parts]
+    groups = [g[num].cast(pl.Float64).to_numpy() for _, g in sub.group_by(cat, maintain_order=True)]
     if all(np.ptp(g) == 0 for g in groups):
         return None
     h, p = sps.kruskal(*groups)
-    n, k = sub.height, len(groups)
-    eps2 = max(0.0, (h - k + 1) / (n - k)) if n > k else 0.0
-    means = sub.group_by(cat).agg(pl.col(num).mean().alias("m")).sort("m", descending=True)
-    top = str(means[cat][0])
+    top, d = _standout(groups, labels)
     return Test(
         id="",
         kind="segment",
@@ -72,11 +114,35 @@ def cat_num(df: pl.DataFrame, cat: str, num: str, min_support: float) -> Test | 
         method="kruskal",
         statistic=float(h),
         p_value=float(p),
-        effect=float(eps2),
-        effect_name="epsilon_squared",
-        n=n,
-        note=f"highest mean in {cat}={top}",
+        effect=abs(d),
+        effect_name="max_group_d",
+        n=sub.height,
+        note=f"{cat}={top} stands out, standardized difference {d:+.2f} against the rest",
     )
+
+
+def _standout(groups: list[np.ndarray], labels: list[str]) -> tuple[str, float]:
+    """The group whose mean differs most from all other rows, in pooled standard deviations.
+
+    An omnibus effect such as epsilon squared dilutes a shift that sits in one group, so the
+    effect bar is applied to this group against the rest. The p-value still comes from the
+    single omnibus test, so picking the largest group adds no extra test to the ledger.
+    """
+    best, best_d = labels[0], 0.0
+    for i, (g, label) in enumerate(zip(groups, labels, strict=True)):
+        others = np.concatenate([x for j, x in enumerate(groups) if j != i])
+        if g.size < 2 or others.size < 2:
+            continue
+        pooled = np.sqrt(
+            ((g.size - 1) * g.var(ddof=1) + (others.size - 1) * others.var(ddof=1))
+            / (g.size + others.size - 2)
+        )
+        if pooled == 0:
+            continue
+        d = (g.mean() - others.mean()) / pooled
+        if abs(d) > abs(best_d):
+            best, best_d = label, float(d)
+    return best, best_d
 
 
 def cat_cat(df: pl.DataFrame, a: str, b: str) -> Test | None:
@@ -105,10 +171,12 @@ def cat_cat(df: pl.DataFrame, a: str, b: str) -> Test | None:
     )
 
 
-def run(df: pl.DataFrame, kind: str, a: str, b: str, min_support: float) -> Test | None:
-    """Rerun one test of a known kind on another slice of rows."""
+def run(
+    df: pl.DataFrame, kind: str, a: str, b: str, min_support: float, time_col: str | None = None
+) -> Test | None:
+    """Run one test of a known kind on a slice of rows, in time order when one is given."""
     if kind in ("correlation", "trend"):
-        return num_num(df, a, b, kind)
+        return num_num(df, a, b, kind, time_col)
     if kind == "segment":
         return cat_num(df, a, b, min_support)
     if kind == "association":

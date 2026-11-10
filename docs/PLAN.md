@@ -26,8 +26,18 @@ Phase 0 still needs a way to score the model on its own discoveries, and an insp
 
 ## Phase 0 calibration
 
-The first development sweep ran on November 5, 2026, over 100 null and 100 planted tables from seed 1, and every setting lives in `results/calibration-dev.json`. Each false discovery level from 0.01 to 0.1 and each effect size scale from half to double produced zero false findings on the null tables. Doubling the effect size bars cut recall from 89% to 66%, while halving them added under one point of recall.
+The development sweep on November 9, 2026, covered 100 easy null tables, 100 hard null tables and 100 planted tables from seed 1, and every setting lives in `results/calibration-dev.json`. The easy null tables could not tell the settings apart, because every setting reported nothing on them. The hard null tables add repeat customers, slowly drifting sensor readings, heavy tails, outliers, missing cells and rare categories, which are the conditions that fool tests built for independent rows.
 
-The defaults therefore stay at a false discovery rate of 0.05 and the conventional small effect sizes. Null tables cannot separate these settings yet, because confirmation and stability already remove every false finding, so a harder null set with skewed and clustered columns comes next.
+The first run on hard null tables found false findings in 19 of 30 tables. Each one had a clear cause. A repeated customer id was tested as a number, rows from one customer were counted as independent evidence, and slowly drifting series looked like trends and like each other. The engine now treats a repeated id as an entity, keeps each entity on one side of the split, and runs every test except time trends on one row per entity. Tests in time order use the effective number of independent rows from the lag one autocorrelation, and a test with fewer than 30 effective rows counts as failing its assumptions.
 
-Three findings on planted tables first looked false, and each one turned out to be two metrics that both trend over time. They are real associations with a shared cause, so the grader now counts them as derived. The engine should learn to explain such pairs through the shared time column, and that check is planned for Phase 1.
+| False discovery rate | False findings per hard null table | Hard null tables with any false finding | Recall on planted tables |
+| --- | --- | --- | --- |
+| 0.01 | 0 | 0 of 100 | 89% |
+| 0.05 | 0 | 0 of 100 | 89% |
+| 0.10 | 0.02 | 2 of 100 | 89% |
+
+The default false discovery rate stays at 0.05, which is now the loosest setting that kept every hard null table clean. Halving the effect size bars added under one point of recall and doubling them cut recall to 66%, so the conventional small effect sizes stay too.
+
+Segment differences remain the weakest pattern type at 70% recall, and the misses are all shifts below about 0.35 standard deviations in one of four groups. A 0.3 standard deviation shift was found in 3 of 12 tables at 2,000 rows and in 12 of 12 at 8,000 rows, so the limit is the amount of evidence in small tables and not the guards. Segment effects are now measured as the standout group against the rest, which matches the 0.2 bar in the design and tells the model which group differs.
+
+Three findings on planted tables first looked false, and each one turned out to be two metrics that both trend over time. They are real associations with a shared cause, so the grader counts them as derived. The engine should learn to explain such pairs through the shared time column, and that check is planned for Phase 1.

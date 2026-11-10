@@ -26,7 +26,7 @@ class Settings:
     min_effect: dict[str, float] = field(
         default_factory=lambda: {
             "abs_rho": 0.1,
-            "epsilon_squared": 0.01,
+            "max_group_d": 0.2,
             "cramers_v": 0.1,
         }
     )
@@ -80,6 +80,12 @@ def split(
     if df.height < s.min_rows_confirm:
         return df, None
     cut = int(df.height * s.explore_share)
+    if card.entity_column:
+        # Rows of one entity are not independent, so each entity goes wholly to one side.
+        ids = df[card.entity_column].unique().sort()
+        chosen = np.random.default_rng(s.seed).random(ids.len()) < s.explore_share
+        mask = df[card.entity_column].is_in(ids.filter(pl.Series(chosen)).implode())
+        return df.filter(mask), df.filter(~mask)
     if card.time_column:
         ordered = df.sort(card.time_column, nulls_last=True)
         block = np.arange(df.height) * s.time_blocks // df.height
@@ -95,24 +101,59 @@ def _passes(t: Test | None, s: Settings, alpha: float, sign: float | None = None
     return sign is None or np.sign(t.statistic) == sign
 
 
-def scan(df: pl.DataFrame, card: DataCard, s: Settings) -> Ledger:
+def per_entity(df: pl.DataFrame, card: DataCard) -> pl.DataFrame:
+    """One row per entity, numeric columns as means and categories as their mode."""
+    nums = card.of_kind("numeric")
+    cats = card.of_kind("categorical", "boolean")
+    agg = [pl.col(c).mean() for c in nums]
+    agg += [pl.col(c).drop_nulls().mode().sort().first().alias(c) for c in cats]
+    return df.group_by(card.entity_column).agg(agg).sort(card.entity_column)
+
+
+class Views:
+    """The frame each test runs on. With repeated entities, every test except a time trend
+    runs on one row per entity, because rows of one entity are not independent evidence."""
+
+    def __init__(self, card: DataCard) -> None:
+        self.card = card
+        self._entity: dict[int, pl.DataFrame] = {}
+
+    def frame(self, part: pl.DataFrame, kind: str) -> pl.DataFrame:
+        if not self.card.entity_column or kind == "trend":
+            return part
+        key = id(part)
+        if key not in self._entity:
+            self._entity[key] = per_entity(part, self.card)
+        return self._entity[key]
+
+    def run(self, part: pl.DataFrame, kind: str, a: str, b: str, s: Settings) -> Test | None:
+        frame = self.frame(part, kind)
+        time_col = self.card.time_column if self.card.time_column in frame.columns else None
+        return stats.run(frame, kind, a, b, s.min_support, time_col)
+
+
+def scan(df: pl.DataFrame, views: Views, s: Settings) -> Ledger:
     ledger = Ledger()
-    for i, (kind, a, b) in enumerate(stats.plan(card)):
-        t = stats.run(df, kind, a, b, s.min_support)
+    for i, (kind, a, b) in enumerate(stats.plan(views.card)):
+        t = views.run(df, kind, a, b, s)
         if t is not None:
             t.id = f"t{i}"
             ledger.add(t)
     return ledger
 
 
-def stability(df: pl.DataFrame, t: Test, s: Settings) -> float:
+def stability(df: pl.DataFrame, views: Views, t: Test, s: Settings) -> float:
+    frame = views.frame(df, t.kind)
     rng = np.random.default_rng(s.seed + 1)
-    half = df.height // 2
+    half = frame.height // 2
     sign = np.sign(t.statistic) if t.method == "spearman" else None
     hits = 0
     for _ in range(s.stability_runs):
-        rows = rng.choice(df.height, size=half, replace=False).tolist()
-        hits += _passes(stats.run(df[rows], t.kind, *t.columns, s.min_support), s, 0.05, sign)
+        rows = np.sort(rng.choice(frame.height, size=half, replace=False)).tolist()
+        sub = frame[rows]
+        time_col = views.card.time_column if views.card.time_column in sub.columns else None
+        rerun = stats.run(sub, t.kind, *t.columns, s.min_support, time_col)
+        hits += _passes(rerun, s, 0.05, sign)
     return hits / s.stability_runs
 
 
@@ -120,7 +161,8 @@ def analyze(df: pl.DataFrame, s: Settings | None = None) -> Analysis:
     s = s or Settings()
     card = build_card(df)
     explore, confirm = split(df, card, s)
-    ledger = scan(explore, card, s)
+    views = Views(card)
+    ledger = scan(explore, views, s)
     dropped = {"fdr": 0, "effect": 0, "confirmation": 0, "stability": 0}
     candidates: list[Finding] = []
     discovered = {t.id for t in ledger.discoveries(s.q, s.dependent)}
@@ -136,7 +178,7 @@ def analyze(df: pl.DataFrame, s: Settings | None = None) -> Analysis:
 
     live = [f for f in candidates if f.status == "exploratory"]
     if confirm is not None and live:
-        reruns = [stats.run(confirm, f.test.kind, *f.test.columns, s.min_support) for f in live]
+        reruns = [views.run(confirm, f.test.kind, *f.test.columns, s) for f in live]
         p_values = [r.p_value if r is not None else 1.0 for r in reruns]
         ok = false_discovery_control(p_values, s.q, s.dependent)
         for f, r, keep in zip(live, reruns, ok, strict=True):
@@ -149,7 +191,7 @@ def analyze(df: pl.DataFrame, s: Settings | None = None) -> Analysis:
 
     for f in candidates:
         if f.status == "confirmed":
-            f.stability = stability(explore, f.test, s)
+            f.stability = stability(explore, views, f.test, s)
             if f.stability < s.stability_keep:
                 f.status = "exploratory"
                 dropped["stability"] += 1

@@ -65,6 +65,64 @@ def base_table(rng: np.random.Generator, n: int) -> pl.DataFrame:
     )
 
 
+def hard_null_table(rng: np.random.Generator, n: int) -> pl.DataFrame:
+    """A table with no association in how it was generated, built to fool naive tests.
+
+    Repeat customers carry their own level on two metrics and a fixed tier, so rows are
+    not independent. Two metrics drift slowly over time without any trend, and their
+    paths can look related. Values are skewed, have outliers and missing cells, and one
+    category has rare levels. Any finding here is false.
+    """
+    start = date(2024, 1, 1)
+    days = np.sort(rng.integers(0, 730, n))
+    customers = rng.integers(0, max(10, n // 12), n)
+    n_cust = customers.max() + 1
+    level_spend = rng.normal(0, 1, n_cust)
+    level_visits = rng.normal(0, 1, n_cust)
+    tier = rng.choice(["bronze", "silver", "gold"], n_cust)
+
+    def ar1(phi: float) -> np.ndarray:
+        x = np.zeros(n)
+        e = rng.normal(0, 1, n)
+        for i in range(1, n):
+            x[i] = phi * x[i - 1] + e[i]
+        return x
+
+    spend = np.exp(1.2 * level_spend[customers] + rng.normal(0, 0.8, n)) * 30
+    spend[rng.random(n) < 0.01] *= 25
+    visits = np.round(np.exp(0.8 * level_visits[customers] + rng.normal(0, 0.5, n)) * 3)
+    rare = rng.choice(
+        ["a", "b", "c", "d", "e", "f", "g", "h"], n, p=[0.5, 0.3, 0.1, 0.05, 0.02, 0.01, 0.01, 0.01]
+    )
+    df = pl.DataFrame(
+        {
+            "customer_id": customers,
+            "order_date": [start + timedelta(days=int(d)) for d in days],
+            "customer_tier": tier[customers],
+            "store": rng.choice(["s1", "s2", "s3", "s4", "s5", "s6"], n),
+            "promo_code": rare,
+            "spend": np.round(spend, 2),
+            "visits": visits,
+            "basket_value": np.round(rng.pareto(2.5, n) * 40 + 5, 2),
+            "wait_minutes": np.round(rng.exponential(12, n), 1),
+            "sensor_a": np.round(ar1(0.97) + 50, 3),
+            "sensor_b": np.round(ar1(0.97) + 20, 3),
+            "score": rng.integers(0, 11, n),
+        }
+    )
+    holes = {c: rng.random(n) < 0.08 for c in ("spend", "wait_minutes", "store")}
+    return df.with_columns(
+        [pl.when(pl.Series(m)).then(None).otherwise(pl.col(c)).alias(c) for c, m in holes.items()]
+    )
+
+
+def make_hard_suite(n: int, rows: int, seed: int) -> list[Task]:
+    return [
+        Task(f"hard-null-{i:03d}", hard_null_table(np.random.default_rng(seed + i), rows), [])
+        for i in range(n)
+    ]
+
+
 def shuffle_columns(df: pl.DataFrame, seed: int = 0) -> pl.DataFrame:
     """Break every association in a real table while keeping each column's values."""
     rng = np.random.default_rng(seed)

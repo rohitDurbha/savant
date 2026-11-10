@@ -8,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from .engine import Settings, analyze
 from .grade import Score, grade, summarize
-from .planted import Task, make_suite
+from .planted import Task, make_hard_suite, make_suite
 
 
 def _one(args: tuple[Task, Settings]) -> Score:
@@ -37,9 +37,10 @@ def sweep(
     effect_scales: list[float],
     base: Settings,
     workers: int = 4,
+    n_hard: int = 0,
 ) -> list[dict]:
     """Try each FDR level and effect-size scale on one fixed development suite."""
-    tasks = make_suite(n_null, n_planted, rows, seed)
+    tasks = make_suite(n_null, n_planted, rows, seed) + make_hard_suite(n_hard, rows, seed + 50_000)
     results = []
     for q in qs:
         for scale in effect_scales:

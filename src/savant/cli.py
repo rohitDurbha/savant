@@ -43,9 +43,10 @@ def cmd_analyze(a: argparse.Namespace) -> None:
 
 
 def cmd_plant(a: argparse.Namespace) -> None:
-    from .planted import make_suite, write_suite
+    from .planted import make_hard_suite, make_suite, write_suite
 
     tasks = make_suite(a.null, a.planted, a.rows, a.seed)
+    tasks += make_hard_suite(a.hard, a.rows, a.seed + 50_000)
     write_suite(tasks, Path(a.out))
     print(f"wrote {len(tasks)} tasks to {a.out}")
 
@@ -63,6 +64,7 @@ def cmd_calibrate(a: argparse.Namespace) -> None:
         _floats(a.effect_scale),
         Settings(stability_runs=a.stability_runs),
         a.workers,
+        a.hard,
     )
     text = json.dumps(rows, indent=1)
     if a.out:
@@ -99,6 +101,7 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("out")
     s.add_argument("--null", type=int, default=50)
     s.add_argument("--planted", type=int, default=50)
+    s.add_argument("--hard", type=int, default=50, help="hard null tables")
     s.add_argument("--rows", type=int, default=2000)
     s.add_argument("--seed", type=int, default=20261105)
     s.set_defaults(fn=cmd_plant)
@@ -106,6 +109,7 @@ def main(argv: list[str] | None = None) -> None:
     s = sub.add_parser("calibrate", help="measure false findings and recall across settings")
     s.add_argument("--null", type=int, default=100)
     s.add_argument("--planted", type=int, default=100)
+    s.add_argument("--hard", type=int, default=100, help="hard null tables")
     s.add_argument("--rows", type=int, default=2000)
     s.add_argument("--seed", type=int, default=1)
     s.add_argument("--q", default="0.05")

@@ -62,7 +62,8 @@ def grade(task: Task, analysis: Analysis) -> Score:
 
 
 def summarize(scores: list[Score]) -> dict:
-    nulls = [s for s in scores if s.null]
+    hard = [s for s in scores if s.task.startswith("hard-null")]
+    nulls = [s for s in scores if s.null and not s.task.startswith("hard-null")]
     planted = [s for s in scores if not s.null]
     by_kind: dict[str, list[int]] = {}
     for s in planted:
@@ -78,6 +79,11 @@ def summarize(scores: list[Score]) -> dict:
             sum(s.false_findings for s in nulls) / len(nulls) if nulls else None
         ),
         "null_files_with_any_false_finding": sum(s.false_findings > 0 for s in nulls),
+        "hard_null_files": len(hard),
+        "false_findings_per_hard_null_file": (
+            sum(s.false_findings for s in hard) / len(hard) if hard else None
+        ),
+        "hard_null_files_with_any_false_finding": sum(s.false_findings > 0 for s in hard),
         "planted_files": len(planted),
         "recall": sum(s.found for s in planted) / total_planted if total_planted else None,
         "recall_by_kind": {k: round(f / t, 3) for k, (f, t) in sorted(by_kind.items())},

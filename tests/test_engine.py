@@ -113,3 +113,79 @@ def test_two_trends_on_one_clock_are_derived_not_false():
     ]
     task = Task("x", pl.DataFrame({"a": [1]}), plants)
     assert derived_pairs(task) == {frozenset({"metric0", "metric1"})}
+
+
+def test_small_group_differences_need_more_rows_not_looser_gates():
+    # A 0.3 SD shift in one of four groups is mostly invisible at 2,000 rows under false
+    # discovery control, and reliably found at 8,000. Recall should grow with data.
+    def found(rows):
+        hits = 0
+        for seed in range(4):
+            base = make_task("s", rows, 0, seed=300 + seed).table
+            df, p = plant(base, "segment", 0, 0.3, np.random.default_rng(seed))
+            hits += p.columns in {f.test.columns for f in analyze(df, FAST).reported}
+        return hits
+
+    assert found(8000) == 4
+    assert found(2000) < found(8000)
+
+
+def test_segment_effect_names_the_group_that_stands_out():
+    rng = np.random.default_rng(0)
+    groups = rng.choice(["a", "b", "c", "d"], 3000)
+    y = rng.normal(size=3000) + 0.5 * (groups == "c")
+    t = stats_run(pl.DataFrame({"g": groups, "y": y}))
+    assert t.effect_name == "max_group_d"
+    assert 0.35 < t.effect < 0.65
+    assert "g=c" in t.note
+
+
+def stats_run(df):
+    from savant.stats import cat_num
+
+    return cat_num(df, "g", "y", 0.01)
+
+
+def test_repeated_id_column_is_an_entity_and_never_tested():
+    from savant.planted import hard_null_table
+
+    df = hard_null_table(np.random.default_rng(1), 2000)
+    card = build_card(df)
+    assert card.column("customer_id").kind == "entity"
+    assert card.entity_column == "customer_id"
+    assert "customer_id" not in {c for t in analyze(df, FAST).ledger.tests for c in t.columns}
+
+
+def test_entity_split_keeps_each_customer_on_one_side():
+    from savant.planted import hard_null_table
+
+    df = hard_null_table(np.random.default_rng(2), 2000)
+    explore, confirm = split(df, build_card(df), Settings())
+    assert not set(explore["customer_id"]) & set(confirm["customer_id"])
+
+
+def test_autocorrelated_series_do_not_make_trends_or_correlations():
+    rng = np.random.default_rng(5)
+    n = 2000
+
+    def ar1():
+        x = np.zeros(n)
+        for i in range(1, n):
+            x[i] = 0.97 * x[i - 1] + rng.normal()
+        return x
+
+    from datetime import date, timedelta
+
+    days = [date(2024, 1, 1) + timedelta(days=int(d)) for d in np.sort(rng.integers(0, 730, n))]
+    hits = 0
+    for _ in range(5):
+        df = pl.DataFrame({"day": days, "a": ar1(), "b": ar1()})
+        hits += len(analyze(df, FAST).reported)
+    assert hits == 0
+
+
+def test_hard_null_tables_produce_almost_no_findings():
+    from savant.planted import make_hard_suite
+
+    total = sum(len(analyze(t.table, FAST).reported) for t in make_hard_suite(10, 2000, 50))
+    assert total <= 1
