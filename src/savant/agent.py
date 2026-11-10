@@ -17,6 +17,7 @@ import polars as pl
 from . import sandbox
 from .engine import Analysis, Settings, analyze
 from .llm import Client
+from .longform import analyze_long, detect, findings_by_measure
 from .profile import DataCard, build_card
 from .report import MissingResult, render, ungrounded_numbers
 
@@ -154,7 +155,22 @@ def ask(
     with its own code, which measures the model apart from the engine.
     """
     guarded: set[frozenset[str]] = set()
-    if show_findings:
+    layout = detect(df) if show_findings else None
+    if layout is not None:
+        # A long table is analyzed one measure at a time, and the model is told so.
+        by_measure = analyze_long(df, settings)
+        card = build_card(df)
+        context = (
+            f"This is a {layout.describe()}.\n\nGuarded findings by measure\n"
+            f"{findings_by_measure(by_measure)}\n\n"
+        )
+        guarded = {
+            frozenset(f.test.columns)
+            for a in by_measure.values()
+            for f in a.findings
+            if f.status in ("confirmed", "leakage")
+        }
+    elif show_findings:
         analysis = analyze(df, settings)
         card = analysis.card
         context = f"Guarded findings\n{findings_text(analysis)}\n\n"

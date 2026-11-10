@@ -42,9 +42,16 @@ def cmd_analyze(a: argparse.Namespace) -> None:
     from .agent import findings_text
     from .engine import Settings, analyze
     from .ingest import load
+    from .longform import analyze_long, detect, findings_by_measure
 
     df = load(a.file) if a.no_clean else _load_clean(a.file, quiet=a.json)
-    res = analyze(df, Settings(stability_runs=a.stability_runs))
+    settings = Settings(stability_runs=a.stability_runs)
+    layout = detect(df)
+    if layout is not None and not a.json:
+        print(f"This is a {layout.describe()}.\n")
+        print(findings_by_measure(analyze_long(df, settings), per_measure=10))
+        return
+    res = analyze(df, settings)
     if a.json:
         out = {
             "tests": len(res.ledger),
