@@ -306,3 +306,20 @@ def test_a_moderate_driver_is_found_among_many_noise_columns():
         res = drivers(df, "signal_y0", FAST)
         hits += bool(res.drivers) and res.drivers[0].feature == "signal_x0"
     assert hits == 3
+
+
+def test_findings_are_not_grouped_just_because_they_share_the_time_column():
+    from savant.insights import headline, rank
+
+    trend = _finding("trend", ("order_date", "metric0"), 0.6, "abs_rho", stat=0.6)
+    shift = _finding(
+        "shift",
+        ("order_date", "level9"),
+        0.9,
+        "shift_d",
+        stat=0.9,
+        note="level shift around 2025-05-03, standardized difference +0.90",
+    )
+    insights = rank([trend, shift], time_column="order_date")
+    assert len(insights) == 2
+    assert headline(shift) == "level9 shifted up around 2025-05-03."

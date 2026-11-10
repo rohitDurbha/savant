@@ -69,8 +69,17 @@ def cmd_analyze(a: argparse.Namespace) -> None:
     print(f"{len(res.ledger)} tests run, dropped {res.dropped}")
     if not res.confirmed_split:
         print("The file is too small for a confirmation split, so every finding is exploratory.")
-    print("\nInsights\n" + insights_text(rank(res.findings)))
+    print("\nInsights\n" + insights_text(rank(res.findings, time_column=res.card.time_column)))
     print("\nAll guarded findings\n" + findings_text(res, limit=50))
+
+
+def cmd_report(a: argparse.Namespace) -> None:
+    from .clean import clean_file
+    from .report_html import write_report
+
+    df, cleaning = clean_file(a.file)
+    out = write_report(df, a.out, title=a.title or Path(a.file).stem, cleaning=cleaning.to_text())
+    print(f"wrote {out}")
 
 
 def cmd_drivers(a: argparse.Namespace) -> None:
@@ -140,6 +149,12 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("--json", action="store_true")
     s.add_argument("--stability-runs", type=int, default=100)
     s.set_defaults(fn=cmd_analyze)
+
+    s = sub.add_parser("report", help="write an HTML page with insights, charts and cleaning")
+    s.add_argument("file")
+    s.add_argument("--out", default="report.html")
+    s.add_argument("--title")
+    s.set_defaults(fn=cmd_report)
 
     s = sub.add_parser("drivers", help="columns most associated with a target, on held-out rows")
     s.add_argument("file")

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from .engine import Finding
 
 LARGE = {"abs_rho": 0.5, "cramers_v": 0.5, "max_group_d": 0.8, "shift_d": 0.8}
-SHIFT = re.compile(r"level shift around (\S+)")
+SHIFT = re.compile(r"level shift around ([0-9-]+)")
 STANDOUT = re.compile(r"^(.*?)=(.*) stands out, standardized difference ([+-][\d.]+)")
 NEAR_WEIGHT = 0.5  # definitions are worth knowing, but they are rarely the news
 
@@ -66,12 +66,18 @@ def headline(f: Finding) -> str:
     return f"{a} and {b} are related."
 
 
-def rank(findings: list[Finding], limit: int = 8) -> list[Insight]:
+def rank(findings: list[Finding], limit: int = 8, time_column: str | None = None) -> list[Insight]:
+    """Strongest findings first, each grouped with weaker ones that share a column.
+
+    The time column is shared by every trend and shift, so it never makes two findings
+    related on its own.
+    """
     usable = [f for f in findings if f.status in ("confirmed", "leakage")]
     usable.sort(key=lambda f: (-score(f), f.test.columns))
     insights: list[Insight] = []
     for f in usable:
-        home = next((i for i in insights if i.columns & set(f.test.columns)), None)
+        cols = set(f.test.columns) - {time_column}
+        home = next((i for i in insights if (i.columns - {time_column}) & cols), None)
         if home is not None:
             home.related.append(f)
         elif len(insights) < limit:
