@@ -89,6 +89,12 @@ jobs:
       - name: Push the notebooks, which starts a run on Kaggle
         if: env.KAGGLE_USERNAME != '' && env.KAGGLE_SECRET != ''
         run: |
+          # kaggle/RUN reads "<date> <notebook or all> <note>", so one run starts only
+          # the notebook it names and never spends quota on the others.
+          target=$(awk '{print $2}' kaggle/RUN)
           for dir in kaggle/notebooks/*/; do
-            kaggle kernels push -p "$dir"
+            name=$(basename "$dir")
+            if [ "$target" = "all" ] || [ "$target" = "$name" ]; then
+              kaggle kernels push -p "$dir"
+            fi
           done

@@ -22,6 +22,8 @@ jobs:
         run: |
           if [[ "$KAGGLE_SECRET" == KGAT_* ]]; then export KAGGLE_API_TOKEN="$KAGGLE_SECRET"; else export KAGGLE_KEY="$KAGGLE_SECRET"; fi
           pip install -q kaggle six
+          echo "== files in savant-real"
+          kaggle datasets files "${KAGGLE_USERNAME}/savant-real" || true
           for dir in kaggle/notebooks/*/; do
             slug=$(python -c "import json,sys; print(json.load(open('${dir}kernel-metadata.json'))['id'].split('/')[1])")
             echo "== ${slug}"
