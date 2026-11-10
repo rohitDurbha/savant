@@ -92,6 +92,7 @@ def window(messages: list[dict[str, str]], keep: int) -> list[dict[str, str]]:
 LABELS = {
     "confirmed": "confirmed",
     "leakage": "near-deterministic, likely a definition or a leak",
+    "explained_by_time": "moves together only through a shared time trend",
 }
 
 
@@ -109,7 +110,8 @@ def findings_text(analysis: Analysis, limit: int = 15) -> str:
         )
 
     near = strongest("leakage")[:3]  # always leave room to say which columns define others
-    shown = strongest("confirmed")[: limit - len(near)] + near
+    timed = strongest("explained_by_time")[:2]
+    shown = strongest("confirmed")[: limit - len(near) - len(timed)] + near + timed
     rows = []
     for f in shown:
         t = f.test

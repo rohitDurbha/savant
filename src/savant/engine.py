@@ -176,7 +176,7 @@ def analyze(df: pl.DataFrame, s: Settings | None = None) -> Analysis:
     explore, confirm = split(df, card, s)
     views = Views(card)
     ledger = scan(explore, views, s)
-    dropped = {"fdr": 0, "effect": 0, "confirmation": 0, "stability": 0}
+    dropped = {"fdr": 0, "effect": 0, "confirmation": 0, "stability": 0, "time": 0}
     candidates: list[Finding] = []
     discovered = {t.id for t in ledger.discoveries(s.q, s.dependent)}
     for t in ledger.tests:
@@ -208,5 +208,21 @@ def analyze(df: pl.DataFrame, s: Settings | None = None) -> Analysis:
             if f.stability < s.stability_keep:
                 f.status = "exploratory"
                 dropped["stability"] += 1
+
+    time_col = card.time_column
+    if time_col and not card.entity_column:
+        for f in candidates:
+            if f.status != "confirmed" or f.test.kind != "correlation":
+                continue
+            if time_col in f.test.columns:
+                continue
+            r, p, _ = stats.partial_on_time(df, *f.test.columns, time_col)
+            if p > s.q or abs(r) < s.min_effect["abs_rho"]:
+                f.status = "explained_by_time"
+                f.test.note = (
+                    f"both columns move with {time_col}, and with time held fixed the link "
+                    f"is weak (partial rho {r:+.2f})"
+                )
+                dropped["time"] += 1
 
     return Analysis(card, ledger, candidates, dropped, confirm is not None)

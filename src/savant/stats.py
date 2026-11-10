@@ -55,6 +55,29 @@ def effective_n(x: np.ndarray, y: np.ndarray, kind: str) -> float:
     return max(3.0, n * (1 - rho) / (1 + rho))
 
 
+def partial_on_time(df: pl.DataFrame, a: str, b: str, time_col: str) -> tuple[float, float, int]:
+    """Spearman correlation of a and b after removing what each shares with time.
+
+    Two metrics that both rise over the year move together even when neither affects the
+    other. Ranking each column and the time column, then taking out the straight-line fit
+    on time, leaves only the movement that time does not explain.
+    """
+    sub = df.select([time_col, a, b]).drop_nulls()
+    t = sps.rankdata(_numeric(sub, time_col))
+    x = sps.rankdata(_numeric(sub, a))
+    y = sps.rankdata(_numeric(sub, b))
+    if t.size < 10 or np.ptp(t) == 0:
+        return 0.0, 1.0, int(t.size)
+    rx = x - np.polyval(np.polyfit(t, x, 1), t)
+    ry = y - np.polyval(np.polyfit(t, y, 1), t)
+    if np.ptp(rx) == 0 or np.ptp(ry) == 0:
+        return 0.0, 1.0, int(t.size)
+    r, _ = sps.pearsonr(rx, ry)
+    n = t.size
+    stat = r * np.sqrt((n - 3) / max(1e-12, 1 - r**2))
+    return float(r), float(2 * sps.t.sf(abs(stat), n - 3)), int(n)
+
+
 def num_num(
     df: pl.DataFrame, a: str, b: str, kind: str = "correlation", time_col: str | None = None
 ) -> Test | None:
