@@ -186,8 +186,8 @@ def run(
 
 def plan(card: DataCard) -> list[tuple[str, str, str]]:
     """Every (kind, a, b) test the scan will run, from column kinds alone."""
-    nums = card.of_kind("numeric")
-    cats = card.of_kind("categorical", "boolean")
+    nums = card.testable("numeric")
+    cats = card.testable("categorical", "boolean")
     inferable = set(card.dependencies)
     tests = [("correlation", a, b) for a, b in itertools.combinations(nums, 2)]
     tests += [("segment", c, n) for c in cats for n in nums]

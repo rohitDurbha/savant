@@ -87,17 +87,40 @@ def window(messages: list[dict[str, str]], keep: int) -> list[dict[str, str]]:
     return head + tail[-keep:] if len(tail) > keep else messages
 
 
-def findings_text(analysis: Analysis) -> str:
+LABELS = {
+    "confirmed": "confirmed",
+    "leakage": "near-deterministic, likely a definition or a leak",
+}
+
+
+def findings_text(analysis: Analysis, limit: int = 15) -> str:
+    """The strongest guarded findings for the prompt, confirmed ones first.
+
+    Exploratory findings did not pass every check, so the model never sees them. A long
+    list would crowd the prompt and run a small GPU out of memory, so the rest are only
+    counted.
+    """
+
+    def strongest(status: str) -> list:
+        return sorted(
+            (f for f in analysis.findings if f.status == status), key=lambda f: -f.test.effect
+        )
+
+    near = strongest("leakage")[:3]  # always leave room to say which columns define others
+    shown = strongest("confirmed")[: limit - len(near)] + near
     rows = []
-    for f in analysis.findings:
+    for f in shown:
         t = f.test
         rows.append(
-            f"- [{f.status}] {t.kind} between {t.columns[0]} and {t.columns[1]}, "
+            f"- [{LABELS[f.status]}] {t.kind} between {t.columns[0]} and {t.columns[1]}, "
             f"{t.method}, {t.effect_name} {t.effect:.3f}, p {t.p_value:.2g}"
             + (f", {t.note}" if t.note else "")
         )
     if not rows:
         return "No guarded findings. The scan found nothing that survived its checks."
+    hidden = len(analysis.findings) - len(rows)
+    if hidden:
+        rows.append(f"({hidden} more findings are not shown, weaker or unconfirmed.)")
     return "\n".join(rows)
 
 

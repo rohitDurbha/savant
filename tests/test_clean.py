@@ -66,11 +66,12 @@ def test_ambiguous_day_month_order_is_flagged_not_guessed():
 def test_category_spellings_are_unified_to_the_most_common_one():
     vals = ["Sales"] * 6 + ["sales", "SALES ", " Sales"] + ["HR"] * 5 + ["Salse"]
     out, report = clean(pl.DataFrame({"dept": vals}), drop_duplicates=False)
-    assert set(out["dept"].to_list()) == {"Sales", "HR"}
-    # " Sales" is fixed by trimming, "sales" and "SALES" by case, "Salse" as a typo.
+    # " Sales" is fixed by trimming and "sales" and "SALES" by case. "Salse" may be a typo,
+    # but real data is full of distinct values one letter apart, so it is only reported.
+    assert set(out["dept"].to_list()) == {"Sales", "HR", "Salse"}
     changed = {c.action: c.count for c in report.changes}
     assert changed["unified case and spacing"] == 2
-    assert changed["merged near duplicates"] == 1
+    assert "possible typos, not changed" in changed
 
 
 def test_distinct_short_categories_are_never_merged():
@@ -138,3 +139,13 @@ def test_a_complete_file_keeps_every_row(tmp_path):
     df, report = clean_file(ok)
     assert df["age"].to_list() == [30, 30]
     assert "cut off" not in report.to_text()
+
+
+def test_real_values_one_letter_apart_are_never_changed():
+    # From the Washington electric vehicle data, where a merge rule rewrote real values.
+    vins = ["WAUSPBFF7H"] * 40 + ["WAUTPBFF7H"] * 2 + ["5YJ3E1EA3P"] * 60 + ["5YJ3E1EC3P"] * 3
+    models = ["MODEL Y"] * 50 + ["MODEL X"] * 4 + ["MODEL S"] * 5
+    towns = ["Preston"] * 30 + ["Creston"] * 2 + ["Arlington"] * 40 + ["Arrington"] * 1
+    for col in (vins, models, towns):
+        out, _ = clean(pl.DataFrame({"v": col}), drop_duplicates=False)
+        assert out["v"].to_list() == col

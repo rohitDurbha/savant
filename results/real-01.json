@@ -1,0 +1,176 @@
+{
+ "ElectricVehiclePopulationData_1": {
+  "rows": 172796,
+  "columns": 16,
+  "seconds": 350.8,
+  "cleaning": "cleaning report, 172796 rows in and 172796 rows out\n- note: the file was cut off mid-row, so its last partial line of 47 bytes was dropped\n- VIN (1-10): merged near duplicates, 12501 values (e.g. WAUSPBFF7H to WAUTPBFF7H; 5YJ3E1EC3P to 5YJ3E1EA3P; WA1F2AFY3N to WA1F2AFY3M)\n- City: unified case and spacing, 4 values (e.g. McChord AFB to Mcchord Afb; McCleary to Mccleary)\n- City: merged near duplicates, 3 values (e.g. Creston to Preston; Harrington to Darrington; Arrington to Arlington)\n- Model: merged near duplicates, 8577 values (e.g. MODEL X to MODEL Y; MODEL S to MODEL Y; SL-CLASS to S-CLASS)",
+  "entity": null,
+  "time": null,
+  "kinds": {
+   "VIN (1-10)": "text",
+   "County": "categorical",
+   "City": "categorical",
+   "State": "categorical",
+   "Postal Code": "numeric",
+   "Model Year": "numeric",
+   "Make": "categorical",
+   "Model": "categorical",
+   "Electric Vehicle Type": "categorical",
+   "Clean Alternative Fuel Vehicle (CAFV) Eligibility": "categorical",
+   "Electric Range": "numeric",
+   "Legislative District": "numeric",
+   "DOL Vehicle ID": "id",
+   "Vehicle Location": "categorical",
+   "Electric Utility": "categorical",
+   "2020 GEOID": "numeric"
+  },
+  "tests": 50,
+  "dropped": {
+   "fdr": 0,
+   "effect": 22,
+   "confirmation": 4,
+   "stability": 0
+  },
+  "findings": "- [confirmed] correlation between Postal Code and Legislative District, spearman, abs_rho 0.357, p 0\n- [confirmed] correlation between Model Year and Electric Range, spearman, abs_rho 0.554, p 0\n- [confirmed] correlation between Legislative District and 2020 GEOID, spearman, abs_rho 0.166, p 0\n- [leakage] segment between County and Postal Code, kruskal, max_group_d 4.605, p 0, County=Spokane stands out, standardized difference +4.61 against the rest\n- [exploratory] segment between County and Model Year, kruskal, max_group_d 0.222, p 3.7e-33, County=Whatcom stands out, standardized difference -0.22 against the rest\n- [leakage] segment between County and Legislative District, kruskal, max_group_d 1.933, p 0, County=Spokane stands out, standardized difference -1.93 against the rest\n- [confirmed] segment between County and 2020 GEOID, kruskal, max_group_d 0.264, p 0, County=Clark stands out, standardized difference -0.26 against the rest\n- [leakage] segment between City and Postal Code, kruskal, max_group_d 1.980, p 0, City=Vancouver stands out, standardized difference +1.98 against the rest\n- [exploratory] segment between City and Model Year, kruskal, max_group_d 0.207, p 7.3e-69, City=Tacoma stands out, standardized difference -0.21 against the rest\n- [leakage] segment between City and Legislative District, kruskal, max_group_d 2.270, p 0, City=Bothell stands out, standardized difference -2.27 against the rest\n- [exploratory] segment between City and 2020 GEOID, kruskal, max_group_d 0.215, p 0, City=Auburn stands out, standardized difference -0.22 against the rest\n- [leakage] segment between Make and Model Year, kruskal, max_group_d 1.226, p 0, Make=NISSAN stands out, standardized difference -1.23 against the rest\n- [confirmed] segment between Make and Electric Range, kruskal, max_group_d 0.535, p 0, Make=CHEVROLET stands out, standardized difference +0.53 against the rest\n- [confirmed] segment between Make and Legislative District, kruskal, max_group_d 0.293, p 9.5e-134, Make=JEEP stands out, standardized difference -0.29 against the rest\n- [leakage] segment between Model and Model Year, kruskal, max_group_d 2.361, p 0, Model=VOLT stands out, standardized difference -2.36 against the rest\n- [leakage] segment between Model and Electric Range, kruskal, max_group_d 1.569, p 0, Model=BOLT EV stands out, standardized difference +1.57 against the rest\n- [confirmed] segment between Model and Legislative District, kruskal, max_group_d 0.295, p 4.4e-81, Model=WRANGLER stands out, standardized difference -0.29 against the rest\n- [confirmed] segment between Electric Vehicle Type and Model Year, kruskal, max_group_d 0.383, p 2.3e-236, Electric Vehicle Type=Battery Electric Vehicle (BEV) stands out, standardized difference +0.38 against the rest\n- [leakage] segment between Clean Alternative Fuel Vehicle (CAFV) Eligibility and Model Year, kruskal, max_group_d 1.604, p 0, Clean Alternative Fuel Vehicle (CAFV) Eligibility=Eligibility unknown as battery range has not been researched stands out, standardized difference +1.60 against the rest\n- [leakage] segment between Clean Alternative Fuel Vehicle (CAFV) Eligibility and Electric Range, kruskal, max_group_d 2.605, p 0, Clean Alternative Fuel Vehicle (CAFV) Eligibility=Clean Alternative Fuel Vehicle Eligible stands out, standardized difference +2.61 against the rest\n- [confirmed] segment between Vehicle Location and Model Year, kruskal, max_group_d 0.202, p 4.2e-45, Vehicle Location=POINT (-122.33364 47.73709) stands out, standardized difference -0.20 against the rest\n- [leakage] segment between Vehicle Location and Legislative District, kruskal, max_group_d 2.353, p 0, Vehicle Location=POINT (-122.01656 47.57118) stands out, standardized difference -2.35 against the rest\n- [leakage] segment between Vehicle Location and 2020 GEOID, kruskal, max_group_d 6.735, p 0, Vehicle Location=POINT (-122.20105 47.84423) stands out, standardized difference +6.74 against the rest\n- [leakage] segment between Electric Utility and Postal Code, kruskal, max_group_d 4.774, p 0, Electric Utility=BONNEVILLE POWER ADMINISTRATION||AVISTA CORP||INLAND POWER & LIGHT COMPANY stands out, standardized difference +4.77 against the rest\n- [exploratory] segment between Electric Utility and Model Year, kruskal, max_group_d 0.229, p 4.5e-51, Electric Utility=PUGET SOUND ENERGY INC||PUD NO 1 OF WHATCOM COUNTY stands out, standardized difference -0.23 against the rest\n- [leakage] segment between Electric Utility and Legislative District, kruskal, max_group_d 1.878, p 0, Electric Utility=BONNEVILLE POWER ADMINISTRATION||AVISTA CORP||INLAND POWER & LIGHT COMPANY stands out, standardized difference -1.88 against the rest\n- [leakage] segment between Electric Utility and 2020 GEOID, kruskal, max_group_d 2.656, p 0, Electric Utility=PUGET SOUND ENERGY INC||PUD NO 1 OF WHATCOM COUNTY stands out, standardized difference +2.66 against the rest\n- [confirmed] association between Electric Vehicle Type and Clean Alternative Fuel Vehicle (CAFV) Eligibility, chi_square, cramers_v 0.763, p 0",
+  "confirmed": 10,
+  "model": {
+   "grounded": false,
+   "rounds": 10,
+   "seconds": 198.9,
+   "pairs": [],
+   "answer": null
+  }
+ },
+ "USChronicDiseaseIndicators_1": {
+  "rows": 144053,
+  "columns": 34,
+  "seconds": 344.0,
+  "cleaning": "cleaning report, 144053 rows in and 144053 rows out\n- note: the file was cut off mid-row, so its last partial line of 103 bytes was dropped\n- DataValue: number formats, 5640 values (e.g. 21,053 to 21053; 3,793 to 3793; 2,466 to 2466)\n- DataValueAlt: number formats, 5640 values (e.g. 21,053 to 21053; 3,793 to 3793; 2,466 to 2466)\n- LowConfidenceLimit: number formats, 2 values (e.g. 1,015.8 to 1015.8; 1,008.1 to 1008.1)\n- HighConfidenceLimit: number formats, 8 values (e.g. 1,247.1 to 1247.1; 1,255.4 to 1255.4; 1,104.5 to 1104.5)\n- QuestionID: merged near duplicates, 65 values (e.g. CVD01 to CKD01; DIA01 to DIS01)",
+  "entity": null,
+  "time": null,
+  "kinds": {
+   "YearStart": "numeric",
+   "YearEnd": "numeric",
+   "LocationAbbr": "categorical",
+   "LocationDesc": "categorical",
+   "DataSource": "categorical",
+   "Topic": "categorical",
+   "Question": "categorical",
+   "Response": "categorical",
+   "DataValueUnit": "categorical",
+   "DataValueType": "categorical",
+   "DataValue": "numeric",
+   "DataValueAlt": "numeric",
+   "DataValueFootnoteSymbol": "categorical",
+   "DataValueFootnote": "categorical",
+   "LowConfidenceLimit": "numeric",
+   "HighConfidenceLimit": "numeric",
+   "StratificationCategory1": "categorical",
+   "Stratification1": "categorical",
+   "StratificationCategory2": "categorical",
+   "Stratification2": "categorical",
+   "StratificationCategory3": "categorical",
+   "Stratification3": "categorical",
+   "Geolocation": "categorical",
+   "LocationID": "numeric",
+   "TopicID": "categorical",
+   "QuestionID": "categorical",
+   "ResponseID": "categorical",
+   "DataValueTypeID": "categorical",
+   "StratificationCategoryID1": "categorical",
+   "StratificationID1": "categorical",
+   "StratificationCategoryID2": "categorical",
+   "StratificationID2": "categorical",
+   "StratificationCategoryID3": "categorical",
+   "StratificationID3": "categorical"
+  },
+  "tests": 135,
+  "dropped": {
+   "fdr": 10,
+   "effect": 31,
+   "confirmation": 0,
+   "stability": 0
+  },
+  "findings": "- [confirmed] correlation between YearStart and YearEnd, spearman, abs_rho 0.846, p 0\n- [confirmed] correlation between YearStart and DataValue, spearman, abs_rho 0.204, p 0\n- [confirmed] correlation between YearStart and DataValueAlt, spearman, abs_rho 0.204, p 0\n- [confirmed] correlation between YearStart and LowConfidenceLimit, spearman, abs_rho 0.194, p 0\n- [confirmed] correlation between YearStart and HighConfidenceLimit, spearman, abs_rho 0.168, p 1e-246\n- [confirmed] correlation between YearEnd and DataValue, spearman, abs_rho 0.127, p 6.2e-170\n- [confirmed] correlation between YearEnd and DataValueAlt, spearman, abs_rho 0.127, p 6.2e-170\n- [confirmed] correlation between YearEnd and LowConfidenceLimit, spearman, abs_rho 0.124, p 2.1e-133\n- [confirmed] correlation between YearEnd and HighConfidenceLimit, spearman, abs_rho 0.111, p 1.9e-108\n- [leakage] correlation between DataValue and DataValueAlt, spearman, abs_rho 1.000, p 0\n- [leakage] correlation between DataValue and LowConfidenceLimit, spearman, abs_rho 0.992, p 0\n- [leakage] correlation between DataValue and HighConfidenceLimit, spearman, abs_rho 0.993, p 0\n- [leakage] correlation between DataValueAlt and LowConfidenceLimit, spearman, abs_rho 0.992, p 0\n- [leakage] correlation between DataValueAlt and HighConfidenceLimit, spearman, abs_rho 0.993, p 0\n- [leakage] correlation between LowConfidenceLimit and HighConfidenceLimit, spearman, abs_rho 0.971, p 0\n- [confirmed] segment between LocationAbbr and YearStart, kruskal, max_group_d 0.395, p 8e-27, LocationAbbr=VI stands out, standardized difference +0.39 against the rest\n- [confirmed] segment between LocationAbbr and DataValue, kruskal, max_group_d 0.795, p 5.2e-35, LocationAbbr=US stands out, standardized difference +0.80 against the rest\n- [confirmed] segment between LocationAbbr and DataValueAlt, kruskal, max_group_d 0.795, p 5.2e-35, LocationAbbr=US stands out, standardized difference +0.80 against the rest\n- [confirmed] segment between LocationAbbr and LowConfidenceLimit, kruskal, max_group_d 0.229, p 2.3e-47, LocationAbbr=KY stands out, standardized difference +0.23 against the rest\n- [confirmed] segment between LocationAbbr and HighConfidenceLimit, kruskal, max_group_d 0.229, p 4.7e-61, LocationAbbr=KY stands out, standardized difference +0.23 against the rest\n- [confirmed] segment between LocationDesc and YearStart, kruskal, max_group_d 0.395, p 8e-27, LocationDesc=Virgin Islands stands out, standardized difference +0.39 against the rest\n- [confirmed] segment between LocationDesc and DataValue, kruskal, max_group_d 0.795, p 5.2e-35, LocationDesc=United States stands out, standardized difference +0.80 against the rest\n- [confirmed] segment between LocationDesc and DataValueAlt, kruskal, max_group_d 0.795, p 5.2e-35, LocationDesc=United States stands out, standardized difference +0.80 against the rest\n- [confirmed] segment between LocationDesc and LowConfidenceLimit, kruskal, max_group_d 0.229, p 2.3e-47, LocationDesc=Kentucky stands out, standardized difference +0.23 against the rest\n- [confirmed] segment between LocationDesc and HighConfidenceLimit, kruskal, max_group_d 0.229, p 4.7e-61, LocationDesc=Kentucky stands out, standardized difference +0.23 against the rest\n- [leakage] segment between DataSource and YearStart, kruskal, max_group_d 3.741, p 0, DataSource=US Cancer DVT stands out, standardized difference -3.74 against the rest\n- [confirmed] segment between DataSource and YearEnd, kruskal, max_group_d 0.602, p 0, DataSource=US Cancer DVT stands out, standardized difference -0.60 against the rest\n- [confirmed] segment between DataSource and DataValue, kruskal, max_group_d 0.239, p 0, DataSource=CMS Part A Claims Data stands out, standardized difference +0.24 against the rest\n- [confirmed] segment between DataSource and DataValueAlt, kruskal, max_group_d 0.239, p 0, DataSource=CMS Part A Claims Data stands out, standardized difference +0.24 against the rest\n- [leakage] segment between DataSource and LowConfidenceLimit, kruskal, max_group_d 1.005, p 0, DataSource=US Cancer DVT stands out, standardized difference +1.01 against the rest\n- [confirmed] segment between DataSource and HighConfidenceLimit, kruskal, max_group_d 0.936, p 0, DataSource=US Cancer DVT stands out, standardized difference +0.94 against the rest\n- [leakage] segment between Topic and YearStart, kruskal, max_group_d 2.678, p 0, Topic=Cancer stands out, standardized difference -2.68 against the rest\n- [confirmed] segment between Topic and YearEnd, kruskal, max_group_d 0.472, p 0, Topic=Cancer stands out, standardized difference -0.47 against the rest\n- [confirmed] segment between Topic and LowConfidenceLimit, kruskal, max_group_d 0.916, p 0, Topic=Cancer stands out, standardized difference +0.92 against the rest\n- [confirmed] segment between Topic and HighConfidenceLimit, kruskal, max_group_d 0.861, p 0, Topic=Cancer stands out, standardized difference +0.86 against the rest\n- [leakage] segment between Question and YearStart, kruskal, max_group_d 1.982, p 0, Question=Invasive cancer (all sites combined) mortality among all people, underlying cause stands out, standardized difference -1.98 against the rest\n- [confirmed] segment between Question and YearEnd, kruskal, max_group_d 0.520, p 0, Question=Have taken an educational class to learn how to manage arthritis symptoms among adults with arthritis stands out, standardized difference -0.52 against the rest\n- [confirmed] segment between Question and DataValue, kruskal, max_group_d 0.407, p 0, Question=Hospitalization for chronic obstructive pulmonary disease as any diagnosis, Medicare-beneficiaries aged 65 years and older stands out, standardized difference +0.41 against the rest\n- [confirmed] segment between Question and DataValueAlt, kruskal, max_group_d 0.407, p 0, Question=Hospitalization for chronic obstructive pulmonary disease as any diagnosis, Medicare-beneficiaries aged 65 years and older stands out, standardized difference +0.41 against the rest\n- [leakage] segment between Question and LowConfidenceLimit, kruskal, max_group_d 6.438, p 0, Question=Invasive cancer (all sites combined), incidence stands out, standardized difference +6.44 against the rest\n- [leakage] segment between Question and HighConfidenceLimit, kruskal, max_group_d 6.119, p 0, Question=Invasive cancer (all sites combined), incidence stands out, standardized difference +6.12 against the rest\n- [confirmed] segment between Question and LocationID, kruskal, max_group_d 0.522, p 1.8e-143, Question=Chronic obstructive pulmonary disease mortality among adults aged 45 years and older, underlying or contributing cause stands out, standardized difference -0.52 against the rest\n- [leakage] segment between DataValueUnit and YearStart, kruskal, max_group_d 2.697, p 0, DataValueUnit=per 100,000 stands out, standardized difference -2.70 against the rest\n- [confirmed] segment between DataValueUnit and YearEnd, kruskal, max_group_d 0.565, p 0, DataValueUnit=per 100,000 stands out, standardized difference -0.57 against the rest\n- [leakage] segment between DataValueUnit and LowConfidenceLimit, kruskal, max_group_d 1.005, p 0, DataValueUnit=per 100,000 stands out, standardized difference +1.01 against the rest\n- [confirmed] segment between DataValueUnit and HighConfidenceLimit, kruskal, max_group_d 0.936, p 0, DataValueUnit=per 100,000 stands out, standardized difference +0.94 against the rest\n- [confirmed] segment between DataValueType and YearStart, kruskal, max_group_d 0.709, p 0, DataValueType=Age-adjusted Rate stands out, standardized difference -0.71 against the rest\n- [confirmed] segment between DataValueType and YearEnd, kruskal, max_group_d 0.311, p 0, DataValueType=Crude 75th percentile stands out, standardized difference +0.31 against the rest\n- [confirmed] segment between DataValueType and DataValue, kruskal, max_group_d 0.252, p 0, DataValueType=Number stands out, standardized difference +0.25 against the rest\n- [confirmed] segment between DataValueType and DataValueAlt, kruskal, max_group_d 0.252, p 0, DataValueType=Number stands out, standardized difference +0.25 against the rest\n- [confirmed] segment between DataValueType and LowConfidenceLimit, kruskal, max_group_d 0.686, p 0, DataValueType=Crude Rate stands out, standardized difference +0.69 against the rest\n- [confirmed] segment between DataValueType and HighConfidenceLimit, kruskal, max_group_d 0.659, p 0, DataValueType=Crude Rate stands out, standardized difference +0.66 against the rest\n- [confirmed] segment between DataValueFootnoteSymbol and YearStart, kruskal, max_group_d 0.649, p 0, DataValueFootnoteSymbol=~ stands out, standardized difference -0.65 against the rest\n- [confirmed] segment between DataValueFootnoteSymbol and YearEnd, kruskal, max_group_d 0.341, p 1.6e-122, DataValueFootnoteSymbol=~ stands out, standardized difference -0.34 against the rest\n- [confirmed] segment between DataValueFootnoteSymbol and LocationID, kruskal, max_group_d 0.601, p 1.5e-105, DataValueFootnoteSymbol=* stands out, standardized difference +0.60 against the rest\n- [confirmed] segment between DataValueFootnote and YearStart, kruskal, max_group_d 0.649, p 0, DataValueFootnote=Data suppressed; too few respondents or cases stands out, standardized difference -0.65 against the rest\n- [confirmed] segment between DataValueFootnote and YearEnd, kruskal, max_group_d 0.341, p 1.6e-122, DataValueFootnote=Data suppressed; too few respondents or cases stands out, standardized difference -0.34 against the rest\n- [confirmed] segment between DataValueFootnote and LocationID, kruskal, max_group_d 0.601, p 1.5e-105, DataValueFootnote=No data available stands out, standardized difference +0.60 against the rest\n- [confirmed] segment between StratificationCategory1 and YearStart, kruskal, max_group_d 0.431, p 8.7e-193, StratificationCategory1=Age stands out, standardized difference +0.43 against the rest\n- [confirmed] segment between StratificationCategory1 and LowConfidenceLimit, kruskal, max_group_d 0.363, p 7.4e-154, StratificationCategory1=Grade stands out, standardized difference -0.36 against the rest\n- [confirmed] segment between StratificationCategory1 and HighConfidenceLimit, kruskal, max_group_d 0.336, p 8.6e-192, StratificationCategory1=Grade stands out, standardized difference -0.34 against the rest\n- [leakage] segment between Stratification1 and YearStart, kruskal, max_group_d 1.323, p 0, Stratification1=Asian or Pacific Islander, non-Hispanic stands out, standardized difference -1.32 against the rest\n- [confirmed] segment between Stratification1 and YearEnd, kruskal, max_group_d 0.391, p 1.5e-120, Stratification1=Asian or Pacific Islander, non-Hispanic stands out, standardized difference -0.39 against the rest\n- [confirmed] segment between Stratification1 and LowConfidenceLimit, kruskal, max_group_d 0.373, p 8.8e-290, Stratification1=Age 18-44 stands out, standardized difference -0.37 against the rest\n- [confirmed] segment between Stratification1 and HighConfidenceLimit, kruskal, max_group_d 0.524, p 0, Stratification1=American Indian or Alaska Native, non-Hispanic stands out, standardized difference +0.52 against the rest\n- [confirmed] segment between Geolocation and YearStart, kruskal, max_group_d 0.395, p 3.6e-27, Geolocation=POINT (-64.896335 18.335765) stands out, standardized difference +0.39 against the rest\n- [confirmed] segment between Geolocation and DataValue, kruskal, max_group_d 0.308, p 1.7e-34, Geolocation=POINT (-81.92896054 28.932040377000476) stands out, standardized difference +0.31 against the rest\n- [confirmed] segment between Geolocation and DataValueAlt, kruskal, max_group_d 0.308, p 1.7e-34, Geolocation=POINT (-81.92896054 28.932040377000476) stands out, standardized difference +0.31 against the rest\n- [confirmed] segment between Geolocation and LowConfidenceLimit, kruskal, max_group_d 0.224, p 3.1e-46, Geolocation=POINT (-84.77497105 37.645970271000465) stands out, standardized difference +0.22 against the rest\n- [confirmed] segment between Geolocation and HighConfidenceLimit, kruskal, max_group_d 0.222, p 9.8e-51, Geolocation=POINT (-84.77497105 37.645970271000465) stands out, standardized difference +0.22 against the rest\n- [leakage] segment between TopicID and YearStart, kruskal, max_group_d 2.678, p 0, TopicID=CAN stands out, standardized difference -2.68 against the rest\n- [confirmed] segment between TopicID and YearEnd, kruskal, max_group_d 0.472, p 0, TopicID=CAN stands out, standardized difference -0.47 against the rest\n- [confirmed] segment between TopicID and LowConfidenceLimit, kruskal, max_group_d 0.916, p 0, TopicID=CAN stands out, standardized difference +0.92 against the rest\n- [confirmed] segment between TopicID and HighConfidenceLimit, kruskal, max_group_d 0.861, p 0, TopicID=CAN stands out, standardized difference +0.86 against the rest\n- [leakage] segment between QuestionID and YearStart, kruskal, max_group_d 1.982, p 0, QuestionID=CAN08 stands out, standardized difference -1.98 against the rest\n- [confirmed] segment between QuestionID and YearEnd, kruskal, max_group_d 0.520, p 0, QuestionID=ART07 stands out, standardized difference -0.52 against the rest\n- [confirmed] segment between QuestionID and DataValue, kruskal, max_group_d 0.407, p 0, QuestionID=COPD03 stands out, standardized difference +0.41 against the rest\n- [confirmed] segment between QuestionID and DataValueAlt, kruskal, max_group_d 0.407, p 0, QuestionID=COPD03 stands out, standardized difference +0.41 against the rest\n- [leakage] segment between QuestionID and LowConfidenceLimit, kruskal, max_group_d 6.438, p 0, QuestionID=CAN07 stands out, standardized difference +6.44 against the rest\n- [leakage] segment between QuestionID and HighConfidenceLimit, kruskal, max_group_d 6.119, p 0, QuestionID=CAN07 stands out, standardized difference +6.12 against the rest\n- [confirmed] segment between QuestionID and LocationID, kruskal, max_group_d 0.522, p 1.8e-143, QuestionID=COPD06 stands out, standardized difference -0.52 against the rest\n- [confirmed] segment between DataValueTypeID and YearStart, kruskal, max_group_d 0.709, p 0, DataValueTypeID=AGEADJRATE stands out, standardized difference -0.71 against the rest\n- [confirmed] segment between DataValueTypeID and YearEnd, kruskal, max_group_d 0.311, p 0, DataValueTypeID=CRD75TH stands out, standardized difference +0.31 against the rest\n- [confirmed] segment between DataValueTypeID and DataValue, kruskal, max_group_d 0.252, p 0, DataValueTypeID=NMBR stands out, standardized difference +0.25 against the rest\n- [confirmed] segment between DataValueTypeID and DataValueAlt, kruskal, max_group_d 0.252, p 0, DataValueTypeID=NMBR stands out, standardized difference +0.25 against the rest\n- [confirmed] segment between DataValueTypeID and LowConfidenceLimit, kruskal, max_group_d 0.686, p 0, DataValueTypeID=CRDRATE stands out, standardized difference +0.69 against the rest\n- [confirmed] segment between DataValueTypeID and HighConfidenceLimit, kruskal, max_group_d 0.659, p 0, DataValueTypeID=CRDRATE stands out, standardized difference +0.66 against the rest\n- [confirmed] segment between StratificationCategoryID1 and YearStart, kruskal, max_group_d 0.431, p 8.7e-193, StratificationCategoryID1=AGE stands out, standardized difference +0.43 against the rest\n- [confirmed] segment between StratificationCategoryID1 and LowConfidenceLimit, kruskal, max_group_d 0.363, p 7.4e-154, StratificationCategoryID1=GRADE stands out, standardized difference -0.36 against the rest\n- [confirmed] segment between StratificationCategoryID1 and HighConfidenceLimit, kruskal, max_group_d 0.336, p 8.6e-192, StratificationCategoryID1=GRADE stands out, standardized difference -0.34 against the rest\n- [leakage] segment between StratificationID1 and YearStart, kruskal, max_group_d 1.323, p 0, StratificationID1=API stands out, standardized difference -1.32 against the rest\n- [confirmed] segment between StratificationID1 and YearEnd, kruskal, max_group_d 0.391, p 1.5e-120, StratificationID1=API stands out, standardized difference -0.39 against the rest\n- [confirmed] segment between StratificationID1 and LowConfidenceLimit, kruskal, max_group_d 0.373, p 8.8e-290, StratificationID1=AGE1844 stands out, standardized difference -0.37 against the rest\n- [confirmed] segment between StratificationID1 and HighConfidenceLimit, kruskal, max_group_d 0.524, p 0, StratificationID1=AIAN stands out, standardized difference +0.52 against the rest",
+  "confirmed": 74,
+  "model": {
+   "grounded": false,
+   "rounds": null,
+   "seconds": 176.4,
+   "pairs": [],
+   "answer": "out of memory: CUDA out of memory. Tried to allocate 5.96 GiB. GPU 0 has a total capacity of 14.56 GiB of which 3.26 GiB is free. Including non-PyTorch memory, this process has 11.30 GiB memory in use. Of the allocated memory 11.08 GiB is allocated by PyTorch, and 93.02 MiB is reserved by PyTorch bu"
+  }
+ },
+ "messy_HR_data": {
+  "rows": 1000,
+  "columns": 10,
+  "seconds": 0.8,
+  "cleaning": "cleaning report, 1000 rows in and 1000 rows out\n- Name: trimmed spacing, 1000 values (e.g. ' grace '; ' david '; ' hannah ')\n- Age: missing placeholders, 159 values (e.g. 'nan')\n- Age: number words, 176 values (e.g. thirty to 30)\n- Salary: trimmed spacing, 167 values (e.g. ' NAN ')\n- Salary: missing placeholders, 167 values (e.g. 'NAN')\n- Salary: number words, 143 values (e.g. SIXTY THOUSAND to 60000)\n- Joining Date: parsed dates from 5 formats, 1000 values (e.g. 99-99-9999; 99/99/9999; 9999.99.99)\n- Email: missing placeholders, 200 values (e.g. 'nan')\n- Phone Number: trimmed spacing, 191 values (e.g. ' ')\n- Phone Number: missing placeholders, 376 values (e.g. 'nan'; '')",
+  "entity": null,
+  "time": "Joining Date",
+  "kinds": {
+   "Name": "categorical",
+   "Age": "numeric",
+   "Salary": "numeric",
+   "Gender": "categorical",
+   "Department": "categorical",
+   "Position": "categorical",
+   "Joining Date": "datetime",
+   "Performance Score": "categorical",
+   "Email": "categorical",
+   "Phone Number": "categorical"
+  },
+  "tests": 38,
+  "dropped": {
+   "fdr": 38,
+   "effect": 0,
+   "confirmation": 0,
+   "stability": 0
+  },
+  "findings": "No guarded findings. The scan found nothing that survived its checks.",
+  "confirmed": 0,
+  "model": {
+   "grounded": true,
+   "rounds": 4,
+   "seconds": 17.0,
+   "pairs": [],
+   "answer": "PAIR: none"
+  }
+ },
+ "warehouse_messy_data": {
+  "rows": 1000,
+  "columns": 10,
+  "seconds": 0.7,
+  "cleaning": "cleaning report, 1000 rows in and 1000 rows out\n- Product Name: trimmed spacing, 1000 values (e.g. ' gadget y '; ' widget a '; ' gadget z ')\n- Quantity: missing placeholders, 158 values (e.g. 'NaN')\n- Quantity: number words, 160 values (e.g. two hundred to 200)\n- Price: missing placeholders, 207 values (e.g. 'NaN')\n- Last Restocked: missing placeholders, 200 values (e.g. 'NaN')\n- Last Restocked: parsed dates from 1 formats, 800 values (e.g. 99/99/9999)",
+  "entity": "Product ID",
+  "time": "Last Restocked",
+  "kinds": {
+   "Product ID": "entity",
+   "Product Name": "categorical",
+   "Category": "categorical",
+   "Warehouse": "categorical",
+   "Location": "categorical",
+   "Quantity": "numeric",
+   "Price": "numeric",
+   "Supplier": "categorical",
+   "Status": "categorical",
+   "Last Restocked": "datetime"
+  },
+  "tests": 30,
+  "dropped": {
+   "fdr": 30,
+   "effect": 0,
+   "confirmation": 0,
+   "stability": 0
+  },
+  "findings": "No guarded findings. The scan found nothing that survived its checks.",
+  "confirmed": 0,
+  "model": {
+   "grounded": false,
+   "rounds": 10,
+   "seconds": 62.3,
+   "pairs": [],
+   "answer": null
+  }
+ }
+}

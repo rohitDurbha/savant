@@ -143,3 +143,36 @@ def test_sandbox_can_import_scipy_and_threaded_numpy(tmp_path):
     # BLAS reserves memory per thread, so a many-core machine exhausts the address limit
     # unless threads are pinned. Kaggle hit this, so the pin is part of the contract.
     assert ex.results["threads"] == "1"
+
+
+def test_findings_text_ranks_caps_and_names_near_deterministic_pairs():
+    from types import SimpleNamespace
+
+    from savant.agent import findings_text
+    from savant.engine import Finding
+    from savant.ledger import Test
+
+    def f(i, status, effect):
+        t = Test(
+            f"t{i}",
+            "correlation",
+            (f"a{i}", f"b{i}"),
+            "spearman",
+            effect,
+            0.0,
+            effect,
+            "abs_rho",
+            100,
+        )
+        return Finding(t, status)
+
+    findings = [f(i, "confirmed", 0.1 + i / 100) for i in range(30)]
+    findings += [f(100 + i, "leakage", 0.99) for i in range(8)]
+    findings += [f(200 + i, "exploratory", 0.5) for i in range(5)]
+    text = findings_text(SimpleNamespace(findings=findings), limit=12)
+    lines = text.splitlines()
+    assert lines[0].startswith("- [confirmed]") and "a29" in lines[0]  # strongest first
+    assert sum(line.startswith("- [") for line in lines) == 12
+    assert "near-deterministic" in text and "leakage" not in text
+    assert "exploratory" not in text
+    assert "31 more" in text

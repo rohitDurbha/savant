@@ -62,3 +62,20 @@ The engine reported two false findings on the 50 hard null tables in the bench, 
 Model code could not import scipy on Kaggle, because BLAS libraries reserved more address space than the 2 GB sandbox cap. The sandbox now pins BLAS to one thread and allows 3 GB.
 
 The Phase 0 gate also asks for the loop to run on real files, and that has not happened yet. A few public datasets with a clear license, run through the engine and the guided model on Kaggle, will close Phase 0.
+
+## Phase 0 first real data run
+
+The first run on real tables used the private savant-real dataset on November 10, 2026. It held a Washington State electric vehicle registration table with 172,796 rows, a CDC chronic disease indicator table with 144,053 rows, and two small synthetic tables made messy on purpose. The full output lives in `results/real-01.json`.
+
+The cleaning stage handled the two messy tables well. It read written numbers such as thirty and two hundred, five mixed date formats, day first dates, padded text and text placeholders for missing values, and the engine then reported no findings on either table, which fits how they were generated. Both large files were exactly 45 MB and ended mid row, and the cleaner dropped each partial last line and said so.
+
+The run also exposed serious problems, recorded here in full.
+
+1. The rule that merged rare spellings into a common one changed real data. It rewrote 12,501 VIN prefixes, 8,577 model names such as MODEL X to MODEL Y, real town names such as Creston to Preston, and question codes such as CVD01 to CKD01. Possible typos are now only reported and never changed.
+2. Integer codes such as postal codes, legislative districts, census GEOIDs and location ids were tested as quantities. They are now a code kind that is never tested.
+3. Text columns with thousands of distinct values, such as map points and city names, were tested as categories. Categories now stop at 100 distinct values.
+4. Columns that repeat each other, such as a state code and a state name, or two identical value columns, doubled the findings. Each duplicate is now tested once.
+5. Near-perfect links between definitional columns, such as a county and its postal codes, were labeled as leakage. They are now described as near-deterministic, likely a definition or a leak.
+6. The chronic disease table produced 94 findings, and the prompt that listed all of them ran the GPU out of memory. The model now sees at most fifteen findings, strongest first, with a count of the rest.
+
+The chronic disease table is in long format, with one row per indicator, place and year, and its findings are mostly structural. Detecting long tables and reshaping them before analysis belongs to Phase 1. The model also used all ten rounds on two tables without a grounded answer, and the next run saves its transcripts so the cause can be read.

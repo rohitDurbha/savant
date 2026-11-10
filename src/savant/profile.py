@@ -7,8 +7,12 @@ from dataclasses import dataclass, field
 
 import polars as pl
 
-KINDS = ("numeric", "categorical", "datetime", "boolean", "id", "entity", "text")
-ID_HINTS = ("id", "uuid", "key", "code", "number", "no")
+KINDS = ("numeric", "categorical", "datetime", "boolean", "id", "entity", "code", "text")
+ID_HINTS = ("id", "uuid", "key", "number", "no")
+# Integers with these words in their name are labels, such as a postal code or a census
+# tract, so averaging them or correlating them with quantities means nothing.
+CODE_HINTS = ("code", "zip", "zipcode", "postal", "district", "geoid", "fips", "tract", "ward")
+MAX_LEVELS = 100  # more distinct values than this is too many groups to compare usefully
 
 
 @dataclass
@@ -29,12 +33,18 @@ class DataCard:
     dependencies: list[tuple[str, str]]
     time_column: str | None
     entity_column: str | None = None
+    duplicates: list[tuple[str, str]] = field(default_factory=list)  # (duplicate, kept)
 
     def column(self, name: str) -> ColumnCard:
         return next(c for c in self.columns if c.name == name)
 
     def of_kind(self, *kinds: str) -> list[str]:
         return [c.name for c in self.columns if c.kind in kinds]
+
+    def testable(self, *kinds: str) -> list[str]:
+        """Columns of these kinds, leaving out any that duplicate an earlier column."""
+        dupes = {d for d, _ in self.duplicates}
+        return [n for n in self.of_kind(*kinds) if n not in dupes]
 
     def to_text(self, max_examples: int = 3) -> str:
         """Render the card as short plain text for a prompt, most useful facts first."""
@@ -50,6 +60,9 @@ class DataCard:
                 f"- {c.name} [{c.kind}, {c.dtype}] missing={c.missing_share:.1%} "
                 f"unique={c.unique} {stats} e.g. {ex}".rstrip()
             )
+        if self.duplicates:
+            same = "; ".join(f"{d} repeats {k}" for d, k in self.duplicates)
+            lines.append(f"duplicate columns, tested once: {same}")
         if self.dependencies:
             deps = "; ".join(f"{a} determines {b}" for a, b in self.dependencies)
             lines.append(f"dependencies: {deps}")
@@ -67,6 +80,8 @@ def _kind(s: pl.Series, rows: int) -> str:
     looks_like_id = unique >= 0.95 * rows and rows >= 20
     tokens = re.split(r"[^a-z0-9]+", name)
     named_like_id = any(t in ID_HINTS for t in tokens) or name.endswith("id")
+    if dtype.is_integer() and unique > 2 and any(t in CODE_HINTS for t in tokens):
+        return "code"
     if dtype.is_integer() and looks_like_id and named_like_id:
         return "id"
     # An id-like name whose values repeat marks rows that belong to the same thing, such
@@ -74,11 +89,17 @@ def _kind(s: pl.Series, rows: int) -> str:
     repeats = max(20, 0.02 * rows) < unique < 0.95 * rows
     if named_like_id and repeats and (dtype.is_integer() or dtype == pl.String):
         return "entity"
+    if (
+        dtype.is_integer()
+        and unique > 2
+        and (any(t in CODE_HINTS for t in tokens) or name.endswith("id"))
+    ):
+        return "code"
     if dtype.is_numeric():
         return "categorical" if unique <= 2 else "numeric"
     if looks_like_id:
         return "id"
-    if unique <= max(20, int(0.05 * rows)):
+    if unique <= min(MAX_LEVELS, max(20, int(0.05 * rows))):
         return "categorical"
     return "text"
 
@@ -114,6 +135,30 @@ def functional_dependencies(df: pl.DataFrame, columns: list[str]) -> list[tuple[
     return deps
 
 
+def duplicate_columns(
+    df: pl.DataFrame, cats: list[str], nums: list[str], deps: list[tuple[str, str]]
+) -> list[tuple[str, str]]:
+    """Columns that carry the same information as an earlier one.
+
+    Two categories that determine each other, such as a state code and a state name, or
+    two numeric columns with identical values, would each produce every finding twice.
+    """
+    order = {c: i for i, c in enumerate(df.columns)}
+    dep = set(deps)
+    dupes: dict[str, str] = {}
+    for a, b in deps:
+        if (b, a) in dep and order[a] < order[b] and b not in dupes:
+            dupes[b] = a
+    for i, a in enumerate(nums):
+        for b in nums[i + 1 :]:
+            if b in dupes or a in dupes:
+                continue
+            x, y = df[a].cast(pl.Float64), df[b].cast(pl.Float64)
+            if x.is_null().equals(y.is_null()) and (x == y).fill_null(True).all():
+                dupes[b] = a
+    return sorted(dupes.items(), key=lambda kv: order[kv[0]])
+
+
 def build_card(df: pl.DataFrame) -> DataCard:
     rows = df.height
     cols = []
@@ -138,4 +183,7 @@ def build_card(df: pl.DataFrame) -> DataCard:
     entities = card.of_kind("entity")
     card.entity_column = entities[0] if entities else None
     card.dependencies = functional_dependencies(df, card.of_kind("categorical"))
+    card.duplicates = duplicate_columns(
+        df, card.of_kind("categorical"), card.of_kind("numeric"), card.dependencies
+    )
     return card

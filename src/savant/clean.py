@@ -171,25 +171,25 @@ def _unify(values: list[str | None], name: str, report: Report) -> list[str | No
         [f"{v} to {mapping[v]}" for v in dict.fromkeys(case_changes)],
     )
     merged_counts = Counter(mapping[v] for v in present)
-    # A rare spelling one edit away from a far more common one, with the same digits,
-    # is treated as a typo of it. Short codes and differently numbered labels never merge.
-    near = {}
+    # A rare spelling one edit away from a far more common one may be a typo, but real
+    # data is full of distinct values one letter apart, such as VINs, model names and
+    # towns. So candidates are only reported for a person to confirm, and never changed.
+    candidates = []
     for rare, n_rare in merged_counts.items():
         for common, n_common in merged_counts.most_common():
             if common == rare or n_rare > 0.2 * n_common or min(len(rare), len(common)) < 5:
                 continue
             same_digits = re.findall(r"\d", rare) == re.findall(r"\d", common)
             if same_digits and _osa(rare.casefold(), common.casefold()) == 1:
-                near[rare] = common
+                candidates.append((rare, common, n_rare))
                 break
-    near_changes = [v for v in present if mapping[v] in near]
     report.add(
         name,
-        "merged near duplicates",
-        len(near_changes),
-        [f"{mapping[v]} to {near[mapping[v]]}" for v in dict.fromkeys(near_changes)],
+        "possible typos, not changed",
+        sum(n for _, _, n in candidates),
+        [f"{rare} next to {common}" for rare, common, _ in candidates],
     )
-    final = {v: near.get(mapping[v], mapping[v]) for v in counts}
+    final = {v: mapping[v] for v in counts}
     return [final[v] if v is not None else None for v in values]
 
 
