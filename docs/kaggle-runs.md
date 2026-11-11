@@ -20,4 +20,5 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-10 | 04-guided, version 2 | Completed, no false pairs on null or hard null tables and recall 0.784, results in results/guided-02.json |
 | 2026-11-10 | 05-selfplay, version 1 | Completed probe, vLLM ran on both T4 cards at 745 runs per hour and kept 71 of 96 runs, results in results/selfplay-probe.json |
 | 2026-11-10 | 05-selfplay, version 2 | Completed, kept 1,482 of 2,000 runs and chose 621 conversations from 462 tables, results in results/selfplay-full.json |
-| 2026-11-11 | 06-train, version 1 | LoRA training on the 621 self-play conversations, two epochs with checkpoints every half epoch |
+| 2026-11-11 | 06-train, version 1 | Completed, held-out loss fell from 0.20 to 0.116 over two epochs in 2.6 hours, results in results/train-03.json |
+| 2026-11-11 | 07-eval, version 1 | Scores the base model and four checkpoints on 30 development tables, then the base model and the best checkpoint on the seen and unseen bench tables |
