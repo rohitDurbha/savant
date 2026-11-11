@@ -27,7 +27,9 @@ SYSTEM = """You are Savant, a careful data analyst. You work in steps.
 
 Each reply holds an optional <Analyze>...</Analyze> block for reasoning, then exactly one action.
 - <Code>python</Code> runs Python. A pandas DataFrame named df is already loaded, with pandas as pd
-  and numpy as np.
+  and numpy as np. Date columns are already pandas datetimes.
+  Each step starts fresh in a new process, so nothing from an earlier step exists. Import what
+  you need, such as scipy.stats, and rebuild any variable inside the same step.
   Call emit("name", value) for every number you may want to cite. Keep each step short.
 - <Answer>text</Answer> ends the analysis. Aim to answer within four steps.
 
@@ -198,6 +200,39 @@ def prepare(
     return Opening(messages, card, guarded, analysis)
 
 
+HINTS = [
+    (
+        "is not defined",
+        "Each step starts fresh, so import the name or rebuild the variable in this step.",
+    ),
+    (
+        "Only valid with DatetimeIndex",
+        "Resample needs a date index, for example df.set_index('date_col').resample('MS').",
+    ),
+    (
+        "Chi2ContingencyResult",
+        "The chi2_contingency result has .statistic and .pvalue, or unpack it as a tuple.",
+    ),
+    (
+        "could not convert string to float",
+        "Select the columns you need first, or pass numeric_only=True to mean or corr.",
+    ),
+    (
+        "agg function failed",
+        "Select the columns you need first, or pass numeric_only=True to mean or corr.",
+    ),
+    (
+        "'Series' object has no attribute",
+        "This value is a Series, so use Series methods such as corr with another Series.",
+    ),
+]
+
+
+def hint_for(error: str) -> str:
+    """A one-line fix for a common error, or an empty string."""
+    return next((hint for needle, hint in HINTS if needle in error), "")
+
+
 def execute_message(
     step_id: str, ex: sandbox.Execution, error: str, repeated: bool = False
 ) -> dict[str, str]:
@@ -209,11 +244,13 @@ def execute_message(
         "stdout": ex.stdout[-800:],
         "error": "" if ex.ok else error,
     }
+    hint = "" if ex.ok else hint_for(error)
+    if hint:
+        feedback["hint"] = hint
     if repeated:
         feedback["hint"] = (
-            "This is the same error as your last step. Change approach, "
-            "for example use plain pandas methods such as groupby, mean and corr."
-        )
+            f"{hint} " if hint else ""
+        ) + "This is the same error as your last step, so change approach."
     payload = json.dumps(feedback, default=str)[:FEEDBACK_CHARS]
     return {"role": "user", "content": f"<Execute>{payload}</Execute>"}
 

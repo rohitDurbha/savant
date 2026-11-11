@@ -151,17 +151,16 @@ def _broken(f: Finding) -> tuple[list[str], str] | None:
         )
     if t.kind == "trend":
         name = f"{_slug(b)}_time_rho"
-        return [f'emit("{name}", df[{b!r}].corr(df[{a!r}].dt.dayofyear, method="spearman"))'], (
-            f"{a} holds plain dates, so I convert it with pd.to_datetime before using it."
+        return [f'emit("{name}", df.resample("MS")[{b!r}].mean().corr(df[{b!r}]))'], (
+            f"Resample needs a date index, so I measure {b} against {a} directly."
         )
     if t.kind == "shift":
         m = re.search(r"level shift around ([0-9-]+)", t.note)
         if not m:
             return None
         cut, before = m.group(1), f"{_slug(b)}_before"
-        return [f'emit("{before}", df.loc[df[{a!r}] < {cut!r}, {b!r}].mean())'], (
-            f"{a} holds plain dates that cannot be compared with text, so I convert it with "
-            "pd.to_datetime first."
+        return [f'emit("{before}", df.resample("MS")[{b!r}].mean().loc[:{cut!r}].mean())'], (
+            f"Resample needs a date index, so I split the rows on {a} at {cut} directly."
         )
     if t.kind == "segment":
         m = STANDOUT.match(t.note)

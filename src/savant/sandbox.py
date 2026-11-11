@@ -41,6 +41,14 @@ def emit(name, value):
     print("{MARKER}" + _json.dumps({{"name": str(name), "value": _clean(value)}}))
 
 df = pd.read_parquet(DATA_PATH)
+# Plain dates arrive as Python objects, which breaks .dt, resampling and comparisons with
+# text, so they become pandas datetimes before the model's code runs.
+import datetime as _dt
+for _c in df.columns:
+    if df[_c].dtype == object:
+        _v = df[_c].dropna()
+        if len(_v) and all(isinstance(x, _dt.date) for x in _v.head(50)):
+            df[_c] = pd.to_datetime(df[_c])
 '''
 
 
