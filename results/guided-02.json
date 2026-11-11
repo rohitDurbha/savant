@@ -1,0 +1,46 @@
+{
+ "agent": {
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "tables": {
+   "guided": {
+    "null": 5,
+    "hard-null": 5,
+    "plant": 20
+   },
+   "blind": {
+    "null": 3,
+    "hard-null": 3,
+    "plant": 4
+   }
+  },
+  "base guided": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 2.833,
+   "mean_seconds": 71.6,
+   "failed_step_share": 0.333,
+   "planted_pairs": 51,
+   "recall": 0.784,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.1,
+   "unverified_claims": 2,
+   "errors": 0
+  },
+  "base blind": {
+   "tables": 10,
+   "grounded_answers": 1.0,
+   "mean_rounds": 3.2,
+   "mean_seconds": 59.19,
+   "failed_step_share": 0.227,
+   "planted_pairs": 11,
+   "recall": 0.0,
+   "false_per_null_table": 6.667,
+   "false_per_hard_null_table": 0.333,
+   "false_per_planted_table": 1.0,
+   "unverified_claims": 0,
+   "errors": 0
+  }
+ },
+ "note": "04-guided version 2, the same tables after guided answers that name an unconfirmed pair are sent back to the model once. False pairs on hard null tables fell back to zero."
+}

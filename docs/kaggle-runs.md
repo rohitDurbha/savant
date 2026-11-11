@@ -17,4 +17,4 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-10 | 03-finetune, version 2 | Completed, adapter trained, guided recall fell below the base model, results in results/finetune-01.json |
 | 2026-11-10 | 03-finetune, version 3 | Completed, adapter fell behind the base model in guided mode after learning the planted mistakes, results in results/finetune-02.json |
 | 2026-11-10 | 04-guided, version 1 | Completed, failed steps fell to 31% and date errors vanished, but two hard null tables gave many false pairs, results in results/guided-01.json |
-| 2026-11-10 | 04-guided, version 2 | The same tables after unconfirmed pairs are sent back to the model once |
+| 2026-11-10 | 04-guided, version 2 | Completed, no false pairs on null or hard null tables and recall 0.784, results in results/guided-02.json |

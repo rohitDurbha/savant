@@ -203,3 +203,17 @@ The 04-guided run measured the base model on the same tables as the second pilot
 | blind after the fixes | 1.0 | 3.2 | 0.227 | 0.0 | 6.667 | 0.333 | 1.0 | 0 |
 
 The date errors are gone, and the remaining failures are mostly names from an earlier step. The fixes also exposed a weakness that the failing code had been hiding from us. Once its own code ran, the model built its own correlation tables and listed every pair above its cutoff, which gave 27 false pairs on one hard null table and 6 on another. The report already marked these pairs as possibly noise, yet the answer still named them. In guided mode an answer that names a pair the guarded checks did not confirm now goes back to the model once, with a request to drop the pair or mention it only as exploratory. This change was also made after reading bench results, and the second 04-guided run measures it on the same tables.
+
+## Phase 2 result after the unconfirmed pair check
+
+The second 04-guided run answered the same tables, and its output lives in `results/guided-02.json`. Sending an unconfirmed pair back once removed every false pair from the null and hard null tables, and the base model in guided mode now gives its cleanest result so far.
+
+| Guided run on the same 30 tables | Grounded answers | Mean rounds | Failed code steps | Recall | False per null table | False per hard null table | False per planted table | Unverified claims |
+|---|---|---|---|---|---|---|---|---|
+| before the fixes | 1.0 | 1.8 | 0.375 | 0.824 | 0.0 | 0.0 | 0.2 | 4 |
+| after the fixes for failed steps | 1.0 | 2.47 | 0.31 | 0.804 | 0.0 | 7.0 | 0.3 | 42 |
+| after the unconfirmed pair check | 1.0 | 2.83 | 0.333 | 0.784 | 0.0 | 0.0 | 0.1 | 2 |
+
+Recall moved from 42 to 40 of the 51 planted pairs, which is within the noise we expect from one run on twenty planted tables. Blind mode is unchanged because the check only applies when the guarded findings are shown. The remaining failed steps are almost all names from an earlier step, which the model still reaches for even with a hint.
+
+Three of these choices were made after reading results from the same 30 bench tables, so these numbers may flatter the setup. The other bench tables have never been shown to the guided model, and a run on them is the honest check before any claim is made. The Phase 2 gate asks for a fine-tuned model that beats the base model, and neither pilot has done that, so the gate is not met.
