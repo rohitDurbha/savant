@@ -34,7 +34,7 @@ jobs:
               [ -f "$f" ] || continue
               echo "-- $(basename "$f")"
               python -c "import json,sys; d=json.load(open(sys.argv[1])); print(json.dumps({k: v for k, v in d.items() if k != 'runs'}, indent=1))" "$f"
-            done
+            done || echo "-- could not summarize the json output for ${slug}"
             for f in out/${slug}/runs.jsonl; do
               [ -f "$f" ] || continue
               echo "-- failed code steps in runs.jsonl"
@@ -74,18 +74,34 @@ jobs:
               for n in notes:
                   print("feedback: " + n)
           PY
-            done
+            done || echo "-- could not summarize runs.jsonl for ${slug}"
             for f in out/${slug}/*.log; do
               [ -f "$f" ] || continue
               echo "-- printed output in $(basename "$f")"
               python - "$f" <<'PY'
           import json, sys
-          events = json.load(open(sys.argv[1]))
-          out = "".join(e["data"] for e in events if e.get("stream_name") == "stdout")
+          text = open(sys.argv[1], errors="replace").read()
+          # Kaggle logs are usually one JSON list, but long runs can come back as JSON
+          # lines or plain text, so read whichever shape arrives.
+          try:
+              events = json.loads(text)
+          except json.JSONDecodeError:
+              events = []
+              for line in text.splitlines():
+                  try:
+                      e = json.loads(line.strip().strip("[],"))
+                  except json.JSONDecodeError:
+                      continue
+                  if isinstance(e, dict):
+                      events.append(e)
+          if not events:
+              print(text[-6000:] if text.strip() else "(empty log)")
+              sys.exit(0)
+          out = "".join(e.get("data", "") for e in events if e.get("stream_name") == "stdout")
           print(out[-6000:])
-          err = [e["data"] for e in events if e.get("stream_name") == "stderr"]
+          err = [e.get("data", "") for e in events if e.get("stream_name") == "stderr"]
           last = [line for line in err if "Error" in line][-3:]
           print("-- last errors", *last, sep="\n")
           PY
-            done
+            done || echo "-- could not summarize the log for ${slug}"
           done
