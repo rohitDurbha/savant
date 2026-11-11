@@ -52,6 +52,9 @@ def test_common_errors_get_a_hint():
         "ValueError: could not convert string to float: 'north'": "numeric_only",
         "TypeError: agg function failed [how->mean,dtype->object]": "numeric_only",
         "AttributeError: 'Series' object has no attribute 'corrwith'": "Series",
+        "FileNotFoundError: [Errno 2] No such file or directory: 'data.csv'": "already loaded",
+        "numpy.exceptions.DTypePromotionError: The DType <class "
+        "'numpy.dtypes.DateTime64DType'> could not be promoted": "days",
     }
     for error, needle in cases.items():
         assert needle in hint_for(error), error

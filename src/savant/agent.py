@@ -223,6 +223,14 @@ HINTS = [
         "Select the columns you need first, or pass numeric_only=True to mean or corr.",
     ),
     (
+        "No such file or directory",
+        "The table is already loaded as df, so never read a file.",
+    ),
+    (
+        "DateTime64DType",
+        "Turn a date column into numbers first, for example (d - d.min()).dt.days.",
+    ),
+    (
         "'Series' object has no attribute",
         "This value is a Series, so use Series methods such as corr with another Series.",
     ),
