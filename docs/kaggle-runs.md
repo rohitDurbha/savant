@@ -23,4 +23,4 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-11 | 06-train, version 1 | Completed, held-out loss fell from 0.20 to 0.116 over two epochs in 2.6 hours, results in results/train-03.json |
 | 2026-11-11 | 07-eval, version 1 | Stopped after the base model, because the newest peft refused to import beside the torchao that Kaggle preinstalls |
 | 2026-11-11 | 07-eval, version 2 | Stopped after the base model again, because the engine process of the first vLLM server outlived it and still held the GPU when the merged checkpoint started |
-| 2026-11-11 | 07-eval, version 3 | Same evaluation, with each vLLM server stopped as a whole process group and a wait until both GPUs are free |
+| 2026-11-11 | 07-eval, version 3 | Completed, chose the epoch 1.0 checkpoint, which beat the base model on seen and unseen bench tables but missed the Phase 2 gate, results in results/eval-03.json |

@@ -1,0 +1,236 @@
+{
+ "dev": {
+  "base": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 2.5,
+   "failed_step_share": 0.31,
+   "planted_pairs": 31,
+   "recall": 0.839,
+   "confirmed_pairs": 27,
+   "confirmed_named": 0.963,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 259
+  },
+  "epoch-0.5": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.4,
+   "failed_step_share": 0.0,
+   "planted_pairs": 31,
+   "recall": 0.871,
+   "confirmed_pairs": 27,
+   "confirmed_named": 1.0,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.048,
+   "errors": 0,
+   "seconds": 91
+  },
+  "epoch-1.0": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.5,
+   "failed_step_share": 0.154,
+   "planted_pairs": 31,
+   "recall": 0.871,
+   "confirmed_pairs": 27,
+   "confirmed_named": 1.0,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 94
+  },
+  "epoch-1.5": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 2.07,
+   "failed_step_share": 0.267,
+   "planted_pairs": 31,
+   "recall": 0.839,
+   "confirmed_pairs": 27,
+   "confirmed_named": 0.963,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 3.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 122
+  },
+  "epoch-2.0": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.67,
+   "failed_step_share": 0.278,
+   "planted_pairs": 31,
+   "recall": 0.871,
+   "confirmed_pairs": 27,
+   "confirmed_named": 1.0,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 3.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 118
+  }
+ },
+ "bench": {
+  "base": {
+   "seen": {
+    "tables": 30,
+    "grounded_answers": 1.0,
+    "mean_rounds": 2.73,
+    "failed_step_share": 0.304,
+    "planted_pairs": 51,
+    "recall": 0.784,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.87,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.0,
+    "false_per_planted_table": 0.0,
+    "errors": 0,
+    "seconds": 182
+   },
+   "unseen": {
+    "tables": 40,
+    "grounded_answers": 1.0,
+    "mean_rounds": 3.0,
+    "failed_step_share": 0.414,
+    "planted_pairs": 48,
+    "recall": 0.708,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.739,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.2,
+    "false_per_planted_table": 0.05,
+    "errors": 0,
+    "seconds": 417
+   }
+  },
+  "epoch-1.0": {
+   "seen": {
+    "tables": 30,
+    "grounded_answers": 1.0,
+    "mean_rounds": 2.03,
+    "failed_step_share": 0.24,
+    "planted_pairs": 51,
+    "recall": 0.804,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.891,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.0,
+    "false_per_planted_table": 0.0,
+    "errors": 0,
+    "seconds": 197
+   },
+   "unseen": {
+    "tables": 40,
+    "grounded_answers": 1.0,
+    "mean_rounds": 2.2,
+    "failed_step_share": 0.083,
+    "planted_pairs": 48,
+    "recall": 0.792,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.826,
+    "false_per_null_table": 0.1,
+    "false_per_hard_null_table": 0.0,
+    "false_per_planted_table": 0.05,
+    "errors": 0,
+    "seconds": 150
+   }
+  }
+ },
+ "chosen": "epoch-1.0",
+ "false_pair_answers": [
+  {
+   "model": "epoch-0.5",
+   "part": "dev",
+   "task": "plant-4500019",
+   "false": 1,
+   "rounds": 3,
+   "pairs": [
+    "basket_items | quantity"
+   ]
+  },
+  {
+   "model": "epoch-1.5",
+   "part": "dev",
+   "task": "hard-null-4500020",
+   "false": 3,
+   "rounds": 5,
+   "pairs": [
+    "sensor_a | spend",
+    "sensor_b | spend",
+    "store | basket_value"
+   ]
+  },
+  {
+   "model": "epoch-2.0",
+   "part": "dev",
+   "task": "hard-null-4500020",
+   "false": 3,
+   "rounds": 5,
+   "pairs": [
+    "sensor_a | spend",
+    "sensor_b | spend",
+    "store | basket_value"
+   ]
+  },
+  {
+   "model": "base",
+   "part": "unseen",
+   "task": "hard-null-011",
+   "false": 1,
+   "rounds": 3,
+   "pairs": [
+    "customer_tier | spend"
+   ]
+  },
+  {
+   "model": "base",
+   "part": "unseen",
+   "task": "hard-null-007",
+   "false": 1,
+   "rounds": 5,
+   "pairs": [
+    "store | spend"
+   ]
+  },
+  {
+   "model": "base",
+   "part": "unseen",
+   "task": "plant-033",
+   "false": 1,
+   "rounds": 10,
+   "pairs": [
+    "segment | group0",
+    "outcome1 | outcome1_adjusted",
+    "outcome2 | outcome2_adjusted"
+   ]
+  },
+  {
+   "model": "epoch-1.0",
+   "part": "unseen",
+   "task": "plant-030",
+   "false": 1,
+   "rounds": 2,
+   "pairs": [
+    "segment | group2",
+    "order_date | metric0",
+    "order_date | level1"
+   ]
+  },
+  {
+   "model": "epoch-1.0",
+   "part": "unseen",
+   "task": "null-014",
+   "false": 1,
+   "rounds": 4,
+   "pairs": [
+    "segment | price"
+   ]
+  }
+ ]
+}
