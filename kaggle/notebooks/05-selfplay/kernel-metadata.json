@@ -11,5 +11,7 @@
   "KAGGLE_USERNAME/savant-bench"
  ],
  "competition_sources": [],
- "kernel_sources": []
+ "kernel_sources": [
+  "KAGGLE_USERNAME/savant-06-train"
+ ]
 }

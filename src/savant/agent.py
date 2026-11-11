@@ -237,8 +237,32 @@ HINTS = [
 ]
 
 
+SCIPY_STATS = {
+    "chi2_contingency", "f_oneway", "fisher_exact", "kendalltau", "kruskal", "levene",
+    "linregress", "mannwhitneyu", "pearsonr", "pointbiserialr", "shapiro", "spearmanr",
+    "ttest_ind", "ttest_rel", "wilcoxon",
+}  # fmt: skip
+UNDEFINED = re.compile(r"name '(\w+)' is not defined")
+UNPACK = (
+    "Check how many values this call returns before unpacking it. For example "
+    "chi2_contingency returns a result with .statistic and .pvalue, and a loop over a "
+    "dict needs .items()."
+)
+
+
 def hint_for(error: str) -> str:
     """A one-line fix for a common error, or an empty string."""
+    undefined = UNDEFINED.search(error)
+    if undefined:
+        name = undefined.group(1)
+        if name in SCIPY_STATS:
+            return f"Each step starts fresh, so add from scipy.stats import {name} to this step."
+        return (
+            f"Each step starts fresh, so {name} from an earlier step is gone. "
+            f"Compute {name} again inside this step before using it."
+        )
+    if "values to unpack" in error:
+        return UNPACK
     return next((hint for needle, hint in HINTS if needle in error), "")
 
 

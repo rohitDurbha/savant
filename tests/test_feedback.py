@@ -61,6 +61,23 @@ def test_common_errors_get_a_hint():
     assert hint_for("ZeroDivisionError: division by zero") == ""
 
 
+def test_undefined_names_get_a_specific_fix():
+    # A scipy function gets the exact import, and anything else is named so the model
+    # rebuilds that variable in the same step.
+    scipy = hint_for("NameError: name 'spearmanr' is not defined")
+    assert "from scipy.stats import spearmanr" in scipy
+    rebuilt = hint_for("NameError: name 'significant_correlations' is not defined")
+    assert "significant_correlations" in rebuilt and "earlier step" in rebuilt
+
+
+def test_unpacking_errors_get_a_hint():
+    for error in (
+        "ValueError: too many values to unpack (expected 2)",
+        "ValueError: not enough values to unpack (expected 3, got 2)",
+    ):
+        assert "returns" in hint_for(error), error
+
+
 def test_hint_is_sent_with_the_error():
     ex = sandbox.Execution(ok=False, stderr="NameError: name 'x' is not defined")
     msg = execute_message("r2", ex, "NameError: name 'x' is not defined")

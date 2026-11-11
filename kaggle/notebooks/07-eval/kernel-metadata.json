@@ -12,6 +12,7 @@
  ],
  "competition_sources": [],
  "kernel_sources": [
-  "KAGGLE_USERNAME/savant-06-train"
+  "KAGGLE_USERNAME/savant-06-train",
+  "KAGGLE_USERNAME/savant-05-selfplay"
  ]
 }
