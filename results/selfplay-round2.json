@@ -1,0 +1,32 @@
+{
+ "tables": 600,
+ "runs": 2400,
+ "kept_runs": 1933,
+ "tables_with_a_kept_run": 550,
+ "chosen": 722,
+ "chosen_pair_none": 262,
+ "keep_rate_by_kind": {
+  "hard-null": 0.869,
+  "null": 0.927,
+  "plant": 0.763
+ },
+ "mean_fidelity_planted": 0.838,
+ "failed_step_share": 0.217,
+ "errors": 0,
+ "mean_seconds": 85.1,
+ "sampled_from": "epoch-1.0",
+ "seed": 4600000,
+ "vllm_mode": "default",
+ "install_seconds": 250,
+ "start_seconds": 210,
+ "sampling_seconds": 6638,
+ "runs_per_hour": 1302,
+ "most_common_failed_steps": {
+  "DTypePromotionError datetime with float": 75,
+  "NameError spearmanr not defined": 53,
+  "ValueError too many values to unpack": 42,
+  "ValueError x and y must be broadcastable": 15,
+  "NameError pearsonr not defined": 13,
+  "SyntaxError unclosed parenthesis": 11
+ }
+}

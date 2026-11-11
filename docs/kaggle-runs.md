@@ -24,4 +24,5 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-11 | 07-eval, version 1 | Stopped after the base model, because the newest peft refused to import beside the torchao that Kaggle preinstalls |
 | 2026-11-11 | 07-eval, version 2 | Stopped after the base model again, because the engine process of the first vLLM server outlived it and still held the GPU when the merged checkpoint started |
 | 2026-11-11 | 07-eval, version 3 | Completed, chose the epoch 1.0 checkpoint, which beat the base model on seen and unseen bench tables but missed the Phase 2 gate, results in results/eval-03.json |
-| 2026-11-11 | 05-selfplay, version 3 | Round two of self-play, sampling 600 new development tables from the round one adapter at epoch 1.0 |
+| 2026-11-11 | 05-selfplay, version 3 | Completed round two from the round one adapter, kept 1,933 of 2,400 runs and chose 722 conversations from 550 tables, results in results/selfplay-round2.json |
+| 2026-11-11 | 06-train, version 2 | Round two training, a fresh adapter from the base model on the 722 round two conversations with the same recipe |
