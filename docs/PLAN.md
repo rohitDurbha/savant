@@ -172,3 +172,17 @@ The next pilot should add conversations where a first code step fails and the se
 ## Phase 2 second pilot design
 
 The second pilot makes the three changes proposed after the first pilot, and every one of them was chosen after reading bench transcripts. About two in five training conversations now begin with a realistic wrong first try, such as comparing plain dates with text, averaging a whole table that holds text columns or reading a chi2 attribute that scipy does not provide. Each of those conversations shows the real error from the sandbox, a short note on the fix and the working code as the second step. Answers now come in two phrasings for each kind of finding, and the plan text tells the model that numbers in the findings list are measured again in code before they are cited. Training uses 400 development tables and half the earlier learning rate. Guided mode is measured on 5 null, 5 hard null and 20 planted bench tables, with the base model and the adapter answering the same tables in the same session, so the comparison does not lean on the earlier baseline run.
+
+## Phase 2 second pilot result
+
+The second pilot finished on Kaggle, and the adapter did worse than the base model on every guided measure. The generator kept 606 of 607 conversations, training ran 72 steps in about an hour, and held-out loss fell from 2.69 to 0.08.
+
+| Run | Tables | Grounded answers | Mean rounds | Failed code steps | Recall | False per planted table | False per null table | False per hard null table |
+|---|---|---|---|---|---|---|---|---|
+| base guided | 30 | 1.0 | 1.8 | 0.375 | 0.824 | 0.2 | 0.0 | 0.0 |
+| adapter guided | 30 | 0.7 | 5.5 | 0.533 | 0.275 | 0.0 | 0.0 | 0.0 |
+| adapter blind | 10 | 0.9 | 4.4 | 0.208 | 0.0 | 0.0 | 1.667 | 2.333 |
+
+The transcripts point to two causes that we can name with confidence. The first cause is that the broken first steps in the recovery conversations carried training labels, so the adapter learned to write the same mistakes on purpose. Its failed steps include the chi2 attribute error, dates compared with text and the date accessor on plain dates, which are exactly the mistakes we planted. It also assumed that variables from an earlier step still exist, which they never do in the sandbox. The second cause is that the very low held-out loss shows the adapter memorized the answer templates. Many of its answers cite placeholders such as a mean price from steps that never emitted them, or they type dates and sizes copied from the findings list, so the grounding check rejects them until the round limit runs out.
+
+The base model in guided mode is the strongest setup we have measured so far. It grounded every answer, found 42 of the 51 planted pairs and named no pair on any null or hard null table. Its weak spot is that more than a third of its code steps still fail before it recovers.

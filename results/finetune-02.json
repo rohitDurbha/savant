@@ -1,0 +1,152 @@
+{
+ "traces": {
+  "attempted": 607,
+  "kept": 606,
+  "relationships": {
+   "attempted": 400,
+   "kept": 399
+  },
+  "lookup": {
+   "attempted": 207,
+   "kept": 207
+  },
+  "relationship_answers_with_pair_none": 174,
+  "mean_recall_of_kept_planted_traces": 0.851,
+  "seconds": 348
+ },
+ "training": {
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "examples": 582,
+  "held_out": 24,
+  "skipped": {
+   "too_long": 0,
+   "template": 0
+  },
+  "steps": 72,
+  "lr": 5e-05,
+  "lora_r": 16,
+  "held_out_loss_before": 2.6921,
+  "held_out_loss_after": 0.08,
+  "loss_curve": [
+   [
+    5,
+    2.3715
+   ],
+   [
+    10,
+    1.3101
+   ],
+   [
+    15,
+    0.9687
+   ],
+   [
+    20,
+    0.7431
+   ],
+   [
+    25,
+    0.6418
+   ],
+   [
+    30,
+    0.5127
+   ],
+   [
+    35,
+    0.4459
+   ],
+   [
+    40,
+    0.2272
+   ],
+   [
+    45,
+    0.1732
+   ],
+   [
+    50,
+    0.1379
+   ],
+   [
+    55,
+    0.1407
+   ],
+   [
+    60,
+    0.0949
+   ],
+   [
+    65,
+    0.1021
+   ],
+   [
+    70,
+    0.0932
+   ],
+   [
+    72,
+    0.145
+   ]
+  ],
+  "seconds": 3578
+ },
+ "agent": {
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "tables": {
+   "guided": {
+    "null": 5,
+    "hard-null": 5,
+    "plant": 20
+   },
+   "blind": {
+    "null": 3,
+    "hard-null": 3,
+    "plant": 4
+   }
+  },
+  "base guided": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.8,
+   "mean_seconds": 41.247,
+   "failed_step_share": 0.375,
+   "planted_pairs": 51,
+   "recall": 0.824,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.2,
+   "unverified_claims": 4,
+   "errors": 0
+  },
+  "adapter guided": {
+   "tables": 30,
+   "grounded_answers": 0.7,
+   "mean_rounds": 5.5,
+   "mean_seconds": 77.47,
+   "failed_step_share": 0.533,
+   "planted_pairs": 51,
+   "recall": 0.275,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "unverified_claims": 1,
+   "errors": 0
+  },
+  "adapter blind": {
+   "tables": 10,
+   "grounded_answers": 0.9,
+   "mean_rounds": 4.4,
+   "mean_seconds": 65.01,
+   "failed_step_share": 0.208,
+   "planted_pairs": 11,
+   "recall": 0.0,
+   "false_per_null_table": 1.667,
+   "false_per_hard_null_table": 2.333,
+   "false_per_planted_table": 0.0,
+   "unverified_claims": 0,
+   "errors": 0
+  }
+ },
+ "note": "Second pilot, kernel version 3. The adapter learned the deliberate mistakes in the recovery conversations because the broken first steps carried training labels, and it wrote answers that cite placeholders from steps that never emitted them. The base model in guided mode stayed ahead on every measure."
+}
