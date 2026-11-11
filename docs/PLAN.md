@@ -217,3 +217,17 @@ The second 04-guided run answered the same tables, and its output lives in `resu
 Recall moved from 42 to 40 of the 51 planted pairs, which is within the noise we expect from one run on twenty planted tables. Blind mode is unchanged because the check only applies when the guarded findings are shown. The remaining failed steps are almost all names from an earlier step, which the model still reaches for even with a hint.
 
 Three of these choices were made after reading results from the same 30 bench tables, so these numbers may flatter the setup. The other bench tables have never been shown to the guided model, and a run on them is the honest check before any claim is made. The Phase 2 gate asks for a fine-tuned model that beats the base model, and neither pilot has done that, so the gate is not met.
+
+## Phase 2 third pilot design
+
+The third pilot follows what recent work on data analysis agents found, and it was designed after reading results from both earlier pilots and the bench. On the 20 planted guided tables the engine confirmed 46 of the 51 planted pairs, while the base model named 40 of them, so the model drops about 13% of the confirmed findings it is handed. A third of its code steps still fail, and in blind mode it finds nothing real on its own.
+
+The earlier pilots trained on answers written by a script. That put the training targets far from how the model writes, which the self-distillation paper links to forgetting, and the very low held-out loss showed that the adapter memorized templates. The broken first steps also carried labels, so the adapter learned the mistakes we planted. The third pilot changes both choices in the way ReST-EM and DataMind recommend.
+
+1. The base model writes its own training data. It answers 300 development tables four times each at temperature 0.7 through a vLLM server, using seeds from 4,000,000 upward.
+2. A run is kept only when it is grounded, names every real pair the engine confirmed, names no false pair and never lost context to the message window. At most two kept runs per table are used, shortest first, so easy tables cannot dominate.
+3. Failed code steps, empty turns and rejected answers stay in the context without labels, so the model learns how a fix follows an error without learning the error itself.
+4. Null and hard null tables answered with PAIR: none stay in the mix as negative examples.
+5. Checkpoints are chosen on separate development tables by task results, never by loss, and the bench is used once at the end with the base model and the adapter in the same session, on the 30 tables used so far and on bench tables the model has never seen.
+
+The targets for the adapter in guided mode are to name at least 97% of the confirmed pairs, to keep failed code steps under 15%, to answer within two rounds on average and to name no false pair on null tables. A short probe run of the sampling notebook comes first, so that the speed of vLLM on the T4 cards and the keep rate are known before the full run.

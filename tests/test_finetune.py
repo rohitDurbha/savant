@@ -30,3 +30,17 @@ def test_only_assistant_turns_carry_labels():
 
 def test_long_examples_are_skipped():
     assert encode_example(MESSAGES, chatml, chars, max_len=20) is None
+
+
+def test_turns_marked_not_learnable_carry_no_labels():
+    learn = [False, False, False, False, True]  # the failed code turn is context only
+    ids, labels = encode_example(MESSAGES, chatml, chars, max_len=10_000, learn=learn)
+    learned = "".join(chr(i) for i, lab in zip(ids, labels, strict=True) if lab != IGNORE)
+    assert learned == "<Answer>ok</Answer><|end|>"
+
+
+def test_learn_mask_must_match_the_messages():
+    import pytest
+
+    with pytest.raises(ValueError):
+        encode_example(MESSAGES, chatml, chars, max_len=10_000, learn=[True])

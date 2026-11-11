@@ -405,15 +405,19 @@ def lookup_trace(
     return trace
 
 
-def _check_seeds(seed: int, n: int) -> None:
+def check_seeds(seed: int, n: int) -> None:
     if seed < BENCH_SEED + BENCH_SPAN and seed + n > BENCH_SEED:
         raise ValueError(
             f"seeds {seed} to {seed + n} overlap the bench range starting at {BENCH_SEED}"
         )
 
 
-def _one(args: tuple[int, int, int]) -> list[dict]:
-    i, seed, rows = args
+def dev_table(seed: int, rows: int) -> tuple[Task, str, np.random.Generator]:
+    """One development table from the training mix, its question and the seeded generator.
+
+    A fifth of the tables are plain nulls, about a seventh are hard nulls and the rest carry
+    one to three planted patterns, with the columns in a random order.
+    """
     rng = np.random.default_rng(seed)
     draw = rng.random()
     if draw < 0.2:
@@ -426,6 +430,12 @@ def _one(args: tuple[int, int, int]) -> list[dict]:
     rng.shuffle(order)
     task = Task(task.id, task.table.select(order), task.plants)
     question = PAIR_QUESTIONS[int(rng.integers(len(PAIR_QUESTIONS)))]
+    return task, question, rng
+
+
+def _one(args: tuple[int, int, int]) -> list[dict]:
+    i, seed, rows = args
+    task, question, rng = dev_table(seed, rows)
     out = []
     recover = rng.random() < 0.4
     style = int(rng.integers(2))
@@ -448,7 +458,7 @@ def make_traces(
     n: int, seed: int = 3_000_000, rows: tuple[int, int] = (800, 3000), workers: int = 4
 ) -> list[dict]:  # noqa: E501
     """Attempts on n development tables, with each record marked kept or not."""
-    _check_seeds(seed, n)
+    check_seeds(seed, n)
     rng = np.random.default_rng(seed)
     jobs = [(i, seed + i, int(rng.integers(rows[0], rows[1]))) for i in range(n)]
     if workers <= 1:

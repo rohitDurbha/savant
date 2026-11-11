@@ -1,0 +1,15 @@
+{
+ "id": "KAGGLE_USERNAME/savant-05-selfplay",
+ "title": "Savant 05 selfplay",
+ "code_file": "notebook.ipynb",
+ "language": "python",
+ "kernel_type": "notebook",
+ "is_private": true,
+ "enable_gpu": true,
+ "enable_internet": true,
+ "dataset_sources": [
+  "KAGGLE_USERNAME/savant-bench"
+ ],
+ "competition_sources": [],
+ "kernel_sources": []
+}

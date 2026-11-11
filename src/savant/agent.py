@@ -84,6 +84,7 @@ class Run:
     verified_pairs: set[frozenset[str]] = field(default_factory=set)
     unverified_pairs: set[frozenset[str]] = field(default_factory=set)
     transcript: list[dict[str, str]] = field(default_factory=list)
+    guarded: set[frozenset[str]] = field(default_factory=set)
 
 
 def window(messages: list[dict[str, str]], keep: int) -> list[dict[str, str]]:
@@ -264,6 +265,7 @@ def ask(
     step_timeout: int = 30,
     keep_messages: int = 8,
     show_findings: bool = True,
+    opening: Opening | None = None,
 ) -> Run:
     """Answer one question about df.
 
@@ -272,9 +274,10 @@ def ask(
     With show_findings off, the model gets only the data card and must find patterns
     with its own code, which measures the model apart from the engine.
     """
-    opening = prepare(df, question, settings, show_findings)
-    card, guarded, messages = opening.card, opening.guarded, opening.messages
-    run = Run(question)
+    # A prepared opening lets several samples of one table share a single engine scan.
+    opening = opening or prepare(df, question, settings, show_findings)
+    card, guarded, messages = opening.card, opening.guarded, list(opening.messages)
+    run = Run(question, guarded=set(guarded))
     allowed = _allowed_tokens(card)
     results: dict[str, dict[str, object]] = {}
     last_error = ""
