@@ -60,6 +60,17 @@ jobs:
               print(n, e)
           for code, err in examples:
               print("---- code\n" + code + "\n---- error\n" + err)
+          print("-- answers that named a false pair")
+          shown = 0
+          for line in open(sys.argv[1]):
+              run = json.loads(line)
+              if not run.get("false") or shown >= 25:
+                  continue
+              shown += 1
+              pairs = [p for p in (run.get("answer") or "").splitlines() if p.startswith("PAIR")]
+              label = " ".join(str(run.get(k, "")) for k in ("model", "part", "task"))
+              print("#### " + label + " false " + str(run["false"]) + " rounds " + str(run.get("rounds")))
+              print("\n".join(pairs)[:600])
           print("-- endings of runs without a grounded answer")
           for line in open(sys.argv[1]):
               run = json.loads(line)

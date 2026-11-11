@@ -1,1 +1,1 @@
-2026-11-11 07-eval score the self-play checkpoints and compare with the base model
+2026-11-11 07-eval rerun with torchao removed so peft can merge the adapters
