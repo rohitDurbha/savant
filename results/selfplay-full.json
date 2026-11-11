@@ -1,0 +1,30 @@
+{
+ "tables": 500,
+ "runs": 2000,
+ "kept_runs": 1482,
+ "tables_with_a_kept_run": 462,
+ "chosen": 621,
+ "chosen_pair_none": 245,
+ "keep_rate_by_kind": {
+  "hard-null": 0.85,
+  "null": 0.847,
+  "plant": 0.682
+ },
+ "mean_fidelity_planted": 0.796,
+ "failed_step_share": 0.274,
+ "errors": 6,
+ "mean_seconds": 128.3,
+ "vllm_mode": "default",
+ "install_seconds": 343,
+ "start_seconds": 240,
+ "sampling_seconds": 8274,
+ "runs_per_hour": 870,
+ "most_common_failed_steps": {
+  "NameError spearmanr not defined": 99,
+  "FileNotFoundError data.csv": 68,
+  "DTypePromotionError datetime with float": 72,
+  "NameError significant_correlations not defined": 43,
+  "NameError pearsonr not defined": 32,
+  "NameError numeric_cols not defined": 30
+ }
+}
