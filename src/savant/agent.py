@@ -278,6 +278,7 @@ def ask(
     allowed = _allowed_tokens(card)
     results: dict[str, dict[str, object]] = {}
     last_error = ""
+    warned = False
     with tempfile.TemporaryDirectory(prefix="savant-data-") as tmp:
         data_path = Path(tmp) / "data.parquet"
         df.write_parquet(data_path)
@@ -330,6 +331,22 @@ def ask(
                     {"role": "user", "content": f"The placeholder {e} has no emitted result."}
                 )
                 continue
+            if show_findings and not warned and round_no < max_rounds:
+                # A pair the guarded checks did not confirm goes back to the model once, so
+                # its own exploratory numbers do not slip into the reported relationships.
+                extra = parse_pairs(body, df.columns) - guarded
+                if extra:
+                    warned = True
+                    listed = "; ".join(" | ".join(sorted(p)) for p in sorted(extra, key=sorted))
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": f"These pairs did not pass the guarded checks: {listed}. "
+                            "Remove their PAIR lines, or mention them only as exploratory "
+                            "without a PAIR line, then reply with <Answer>.",
+                        }
+                    )
+                    continue
             run.answer, run.grounded = body, True
             if show_findings:
                 claimed = parse_pairs(body, df.columns)

@@ -1,0 +1,46 @@
+{
+ "agent": {
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "tables": {
+   "guided": {
+    "null": 5,
+    "hard-null": 5,
+    "plant": 20
+   },
+   "blind": {
+    "null": 3,
+    "hard-null": 3,
+    "plant": 4
+   }
+  },
+  "base guided": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 2.467,
+   "mean_seconds": 63.093,
+   "failed_step_share": 0.31,
+   "planted_pairs": 51,
+   "recall": 0.804,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 7.0,
+   "false_per_planted_table": 0.3,
+   "unverified_claims": 42,
+   "errors": 0
+  },
+  "base blind": {
+   "tables": 10,
+   "grounded_answers": 1.0,
+   "mean_rounds": 3.2,
+   "mean_seconds": 65.48,
+   "failed_step_share": 0.227,
+   "planted_pairs": 11,
+   "recall": 0.0,
+   "false_per_null_table": 6.667,
+   "false_per_hard_null_table": 0.333,
+   "false_per_planted_table": 1.0,
+   "unverified_claims": 0,
+   "errors": 0
+  }
+ },
+ "note": "04-guided version 1, the base model after real datetimes, the fresh-step prompt and error hints. Failed steps fell, but the model listed many pairs from its own correlation tables on two hard null tables."
+}

@@ -190,3 +190,16 @@ The base model in guided mode is the strongest setup we have measured so far. It
 ## Phase 2 fixes for failed code steps
 
 After the second pilot we chose to keep the base model and reduce its failed code steps, because it already grounds every guided answer and names no pair on null tables. This choice was made after reading bench transcripts. Date columns now reach the model's code as pandas datetimes, which removes most of the date errors seen in both pilots. The prompt now says that every step starts fresh in a new process, so the model imports what it needs and rebuilds its variables inside each step. Common errors such as a missing name, resampling without a date index, the chi2 attribute and averaging text columns now come back with a one-line hint. The 04-guided notebook measures the base model on the same 30 guided tables as the second pilot and on the ten blind baseline tables, with no training.
+
+## Phase 2 result after the fixes for failed code steps
+
+The 04-guided run measured the base model on the same tables as the second pilot, and the full output lives in `results/guided-01.json`. The blind columns compare with the blind run in `results/baseline-01.json`.
+
+| Run | Grounded answers | Mean rounds | Failed code steps | Recall | False per null table | False per hard null table | False per planted table | Unverified claims |
+|---|---|---|---|---|---|---|---|---|
+| guided before the fixes | 1.0 | 1.8 | 0.375 | 0.824 | 0.0 | 0.0 | 0.2 | 4 |
+| guided after the fixes | 1.0 | 2.47 | 0.31 | 0.804 | 0.0 | 7.0 | 0.3 | 42 |
+| blind baseline | 0.5 | 7.0 | not measured | 0.0 | 0.667 | 0.333 | 5.5 | 0 |
+| blind after the fixes | 1.0 | 3.2 | 0.227 | 0.0 | 6.667 | 0.333 | 1.0 | 0 |
+
+The date errors are gone, and the remaining failures are mostly names from an earlier step. The fixes also exposed a weakness that the failing code had been hiding from us. Once its own code ran, the model built its own correlation tables and listed every pair above its cutoff, which gave 27 false pairs on one hard null table and 6 on another. The report already marked these pairs as possibly noise, yet the answer still named them. In guided mode an answer that names a pair the guarded checks did not confirm now goes back to the model once, with a request to drop the pair or mention it only as exploratory. This change was also made after reading bench results, and the second 04-guided run measures it on the same tables.

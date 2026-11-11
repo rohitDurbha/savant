@@ -190,8 +190,25 @@ def test_guided_claims_without_a_guarded_finding_are_marked_unverified():
     task = make_task("v", 3000, 3, seed=7)
     real = [p for p in task.plants if p.kind != "leak"][0]
     a, b = real.columns
-    client = Scripted([f"<Answer>PAIR: {a} | {b}\nPAIR: price | rating</Answer>"])
+    answer = f"<Answer>PAIR: {a} | {b}\nPAIR: price | rating</Answer>"
+    client = Scripted([answer, answer])  # the model keeps the pair after one warning
     run = ask(task.table, "What matters?", client)
     assert run.verified_pairs == {frozenset({a, b})}
     assert run.unverified_pairs == {frozenset({"price", "rating"})}
     assert "not confirmed by the checks" in run.rendered
+
+
+def test_guided_answer_with_an_unconfirmed_pair_is_sent_back_once():
+    task = make_task("v", 3000, 3, seed=7)
+    real = [p for p in task.plants if p.kind != "leak"][0]
+    a, b = real.columns
+    client = Scripted(
+        [
+            f"<Answer>PAIR: {a} | {b}\nPAIR: price | rating</Answer>",
+            f"<Answer>PAIR: {a} | {b}</Answer>",
+        ]
+    )
+    run = ask(task.table, "What matters?", client)
+    assert "price | rating" in client.seen[-1] and "did not pass" in client.seen[-1]
+    assert run.verified_pairs == {frozenset({a, b})} and run.unverified_pairs == set()
+    assert "not confirmed" not in run.rendered
