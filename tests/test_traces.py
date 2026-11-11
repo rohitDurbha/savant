@@ -76,3 +76,26 @@ def test_lookup_trace_names_the_top_group_from_code():
     assert trace is not None
     rendered = render(_answer(trace), _results(trace))
     assert "south" in rendered
+
+
+def test_recovery_trace_fails_once_then_fixes_the_code():
+    task = make_task("plant-x", 3000, 3, DEV + 1)
+    trace = build_trace(task, PAIR_QUESTION, recover=True)
+    assert trace is not None
+    msgs = trace["messages"]
+    first, second = msgs[3], msgs[5]
+    assert '"ok": false' in first["content"] and '"error": ""' not in first["content"]
+    assert '"ok": true' in second["content"]
+    answer = _answer(trace)
+    assert "{{r2." in answer and "{{r1." not in answer
+    render(answer, _results(trace))
+
+
+def test_lookup_recovery_selects_the_column_before_averaging():
+    rng = np.random.default_rng(1)
+    n = 900
+    region = rng.choice(["north", "south", "east"], n)
+    df = pl.DataFrame({"region": region, "price": rng.normal(50, 5, n) + 20 * (region == "south")})
+    trace = lookup_trace(df, "region", "price", recover=True)
+    assert trace is not None and len(trace["messages"]) == 7
+    assert "south" in render(_answer(trace), _results(trace))

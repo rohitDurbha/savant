@@ -62,8 +62,12 @@ def _shown(findings: list[Finding]) -> list[Finding]:
     return strongest("confirmed")[: LIMIT - extra]
 
 
-def _measure(f: Finding) -> tuple[list[str], str]:
-    """Code lines that measure one confirmed finding, and the sentence that cites them."""
+def _measure(f: Finding, style: int = 0) -> tuple[list[str], str]:
+    """Code lines that measure one confirmed finding, and the sentence that cites them.
+
+    The style picks one of a few phrasings, so the model learns to cite results without
+    memorizing a single sentence.
+    """
     t = f.test
     a, b = t.columns
     rising = (t.statistic or 0) >= 0
@@ -71,14 +75,20 @@ def _measure(f: Finding) -> tuple[list[str], str]:
         name = f"{_slug(a)}_{_slug(b)}_rho"
         code = [f'emit("{name}", df[{a!r}].corr(df[{b!r}], method="spearman"))']
         way = "rise together" if rising else "move in opposite directions"
-        return code, f"{a} and {b} {way}, with a rank correlation of {{{{r1.{name}}}}}."
+        return code, (
+            f"{a} and {b} {way}, with a rank correlation of {{{{r1.{name}}}}}.",
+            f"The rank correlation between {a} and {b} is {{{{r1.{name}}}}}, so they {way}.",
+        )[style % 2]
     if t.kind == "trend":
         name = f"{_slug(b)}_time_rho"
         code = [
             f'emit("{name}", df[{b!r}].corr(pd.to_datetime(df[{a!r}]).rank(), method="spearman"))'
         ]
         way = "rises" if rising else "falls"
-        return code, f"{b} {way} over {a}, with a rank correlation of {{{{r1.{name}}}}} with time."
+        return code, (
+            f"{b} {way} over {a}, with a rank correlation of {{{{r1.{name}}}}} with time.",
+            f"Over {a}, {b} {way}, and its rank correlation with time is {{{{r1.{name}}}}}.",
+        )[style % 2]
     if t.kind == "shift":
         m = re.search(r"level shift around ([0-9-]+)", t.note)
         if not m:
@@ -91,8 +101,10 @@ def _measure(f: Finding) -> tuple[list[str], str]:
         ]
         return code, (
             f"{b} moves to a new level partway through {a}, from an average of "
-            f"{{{{r1.{before}}}}} before the change to {{{{r1.{after}}}}} after it."
-        )
+            f"{{{{r1.{before}}}}} before the change to {{{{r1.{after}}}}} after it.",
+            f"Partway through {a}, the average of {b} changes from {{{{r1.{before}}}}} to "
+            f"{{{{r1.{after}}}}}.",
+        )[style % 2]
     if t.kind == "segment":
         m = STANDOUT.match(t.note)
         if not m:
@@ -106,16 +118,67 @@ def _measure(f: Finding) -> tuple[list[str], str]:
         ]
         return code, (
             f"{b} differs by {a}. Rows where {a} is {group} average {{{{r1.{inside}}}}}, "
-            f"against {{{{r1.{rest}}}}} for the other groups."
-        )
+            f"against {{{{r1.{rest}}}}} for the other groups.",
+            f"When {a} is {group}, the average {b} is {{{{r1.{inside}}}}}, while the other "
+            f"groups average {{{{r1.{rest}}}}}.",
+        )[style % 2]
     if t.kind == "association":
         name = f"{_slug(a)}_{_slug(b)}_v"
         code = [
             f"ct = pd.crosstab(df[{a!r}], df[{b!r}])",
             f'emit("{name}", (chi2_contingency(ct)[0] / (ct.values.sum() * (min(ct.shape) - 1))) ** 0.5)',  # noqa: E501
         ]
-        return code, f"{a} and {b} are associated, with a Cramér's V of {{{{r1.{name}}}}}."
+        return code, (
+            f"{a} and {b} are associated, with a Cramér's V of {{{{r1.{name}}}}}.",
+            f"The levels of {a} and {b} tend to go together, with a Cramér's V of "
+            f"{{{{r1.{name}}}}}.",
+        )[style % 2]
     return [], ""
+
+
+def _broken(f: Finding) -> tuple[list[str], str] | None:
+    """A realistic wrong first try at measuring a finding, and how the next step fixes it.
+
+    The mistakes are the ones the first pilot made on bench tables, so the model learns to
+    read the error and repair the code instead of giving up or guessing.
+    """
+    t = f.test
+    a, b = t.columns
+    if t.kind == "correlation":
+        name = f"{_slug(a)}_{_slug(b)}_rho"
+        return [f'emit("{name}", df.corr(method="spearman").loc[{a!r}, {b!r}])'], (
+            "df.corr fails on the text columns, so I correlate the two columns directly."
+        )
+    if t.kind == "trend":
+        name = f"{_slug(b)}_time_rho"
+        return [f'emit("{name}", df[{b!r}].corr(df[{a!r}].dt.dayofyear, method="spearman"))'], (
+            f"{a} holds plain dates, so I convert it with pd.to_datetime before using it."
+        )
+    if t.kind == "shift":
+        m = re.search(r"level shift around ([0-9-]+)", t.note)
+        if not m:
+            return None
+        cut, before = m.group(1), f"{_slug(b)}_before"
+        return [f'emit("{before}", df.loc[df[{a!r}] < {cut!r}, {b!r}].mean())'], (
+            f"{a} holds plain dates that cannot be compared with text, so I convert it with "
+            "pd.to_datetime first."
+        )
+    if t.kind == "segment":
+        m = STANDOUT.match(t.note)
+        if not m:
+            return None
+        inside = f"{_slug(b)}_{_slug(m.group(2))}"
+        return [
+            f"means = df.groupby({a!r}).mean()",
+            f'emit("{inside}", means.loc[{m.group(2)!r}, {b!r}])',
+        ], f"The table has text columns, so I select {b} before averaging within {a}."
+    if t.kind == "association":
+        name = f"{_slug(a)}_{_slug(b)}_v"
+        return [
+            f"ct = pd.crosstab(df[{a!r}], df[{b!r}])",
+            f'emit("{name}", (chi2_contingency(ct).chi2 / ct.values.sum()) ** 0.5)',
+        ], "The chi2_contingency result has no chi2 attribute, so I take its first item."
+    return None
 
 
 def _caveats(findings: list[Finding]) -> list[str]:
@@ -156,12 +219,32 @@ def _finish(
     answer: str,
     df: pl.DataFrame,
     allowed: set[str],
+    broken: tuple[str, str] | None = None,
 ) -> dict | None:
-    """Run the code, check the answer is grounded, and return the conversation."""
+    """Run the code, check the answer is grounded, and return the conversation.
+
+    With a broken first try, that code runs first and must fail. The conversation then
+    shows the error, a short note on the fix and the working code as step r2.
+    """
+    turns: list[dict[str, str]] = []
+    step = "r1"
+    if broken is not None:
+        bad_code, fix = broken
+        bad, bad_error = _execute(bad_code, df)
+        if not bad.ok and bad_error:
+            turns = [
+                {
+                    "role": "assistant",
+                    "content": f"<Analyze>{analyze_text}</Analyze>\n<Code>{bad_code}</Code>",
+                },
+                execute_message("r1", bad, bad_error),
+            ]
+            analyze_text, step = fix, "r2"
+            answer = answer.replace("{{r1.", "{{r2.")
     ex, error = _execute(code, df)
     if not ex.ok:
         return None
-    results = {"r1": ex.results}
+    results = {step: ex.results}
     if ungrounded_numbers(answer, allowed):
         return None
     try:
@@ -172,23 +255,39 @@ def _finish(
         return None  # a measure came back empty, which would teach a broken answer
     messages = [
         *opening_messages,
+        *turns,
         {"role": "assistant", "content": f"<Analyze>{analyze_text}</Analyze>\n<Code>{code}</Code>"},
-        execute_message("r1", ex, error),
+        execute_message(step, ex, error),
         {"role": "assistant", "content": f"<Answer>{answer}</Answer>"},
     ]
     return {"messages": messages, "results": results, "rendered": rendered}
 
 
-def build_trace(task: Task, question: str, settings: Settings | None = None) -> dict | None:
-    """A verified relationship conversation for one table, or None when it fails a check."""
+def build_trace(
+    task: Task,
+    question: str,
+    settings: Settings | None = None,
+    recover: bool = False,
+    style: int = 0,
+) -> dict | None:
+    """A verified relationship conversation for one table, or None when it fails a check.
+
+    With recover set, the first try at measuring the strongest finding contains a common
+    mistake, and the conversation shows the model fixing it from the error message.
+    """
     opening = prepare(task.table, question, settings)
     findings = opening.analysis.findings if opening.analysis else []
     shown = _shown(findings)
     lines, sentences, pairs = [], [], []
+    bad_lines: list[str] = []
+    fix = ""
     for f in shown:
-        code, sentence = _measure(f)
+        code, sentence = _measure(f, style)
         if not code or f.test.columns in pairs:
             continue  # a trend and a shift on the same pair are told once, strongest first
+        wrong = _broken(f) if recover and not fix else None
+        if wrong:
+            bad_lines, fix = wrong
         lines += code
         sentences.append(sentence)
         pairs.append(f.test.columns)
@@ -199,13 +298,24 @@ def build_trace(task: Task, question: str, settings: Settings | None = None) -> 
         )
         code = "\n".join(imports + lines)
         plan = (
-            "The guarded findings list relationships that passed every check. I will measure "
-            "each one in code so the answer can cite real numbers."
+            "The guarded findings list relationships that passed every check. The numbers in "
+            "that list are not cited directly, so I measure each one again in code and cite "
+            "the emitted results."
         )
+        broken = None
+        if bad_lines:
+            first = imports + bad_lines if "chi2_contingency" in str(bad_lines) else bad_lines
+            broken = ("\n".join(first), fix)
         these = "These relationships" if len(pairs) > 1 else "This relationship"
-        answer = (
+        opener = (
             f"{these} passed false discovery control, a check on held-out rows and a stability "
-            "check. They describe associations in this data and do not show cause.\n\n"
+            "check. They describe associations in this data and do not show cause.",
+            f"{these} held up under false discovery control, on rows the scan never saw and "
+            "under resampling. They are associations, and the data alone does not show cause.",
+        )[style % 2]
+        answer = (
+            opener
+            + "\n\n"
             + "\n".join(f"- {s}" for s in sentences)
             + ("\n\n" + " ".join(caveats) if caveats else "")
             + "\n\n"
@@ -213,6 +323,7 @@ def build_trace(task: Task, question: str, settings: Settings | None = None) -> 
         )
     else:
         code = 'emit("rows", len(df))\nemit("columns", df.shape[1])'
+        broken = None
         plan = (
             "No guarded finding passed every check. I will confirm the size of the table and "
             "report that nothing held up."
@@ -222,7 +333,9 @@ def build_trace(task: Task, question: str, settings: Settings | None = None) -> 
             "discovery control, the check on held-out rows and the stability check, so I report "
             "none." + ("\n\n" + " ".join(caveats) if caveats else "") + "\n\nPAIR: none"
         )
-    trace = _finish(opening.messages, plan, code, answer, task.table, _allowed_tokens(opening.card))
+    trace = _finish(
+        opening.messages, plan, code, answer, task.table, _allowed_tokens(opening.card), broken
+    )
     if trace is None:
         return None
     claimed = parse_pairs(answer, task.table.columns)
@@ -238,7 +351,7 @@ def build_trace(task: Task, question: str, settings: Settings | None = None) -> 
 
 
 def lookup_trace(
-    df: pl.DataFrame, cat: str, num: str, settings: Settings | None = None
+    df: pl.DataFrame, cat: str, num: str, settings: Settings | None = None, recover: bool = False
 ) -> dict | None:
     """A verified answer to which level of cat has the highest average num."""
     question = f"Which {cat} has the highest average {num}?"
@@ -268,7 +381,14 @@ def lookup_trace(
         f"{{{{r1.next_group}}}} at {{{{r1.next_mean}}}}, across {{{{r1.groups}}}} groups of "
         f"{cat}. {check}"
     )
-    trace = _finish(opening.messages, plan, code, answer, df, _allowed_tokens(opening.card))
+    broken = None
+    if recover:
+        broken = (
+            f"means = df.groupby({cat!r})[{num!r}].mean().sort_values(by={num!r}, ascending=False)"
+            '\nemit("top_group", means.index[0])',
+            "The averages form a Series, so sort_values takes no column name.",
+        )
+    trace = _finish(opening.messages, plan, code, answer, df, _allowed_tokens(opening.card), broken)
     if trace is None:
         return None
     means = (
@@ -278,7 +398,9 @@ def lookup_trace(
         .agg(pl.col(num).mean())
         .sort(num, descending=True)
     )
-    if means.height < 2 or str(means[cat][0]) != str(trace["results"]["r1"]["top_group"]):
+    if means.height < 2 or str(means[cat][0]) != str(
+        next(iter(trace["results"].values()))["top_group"]
+    ):
         return None
     trace.update(family="lookup", confirmed=confirmed)
     return trace
@@ -306,7 +428,9 @@ def _one(args: tuple[int, int, int]) -> list[dict]:
     task = Task(task.id, task.table.select(order), task.plants)
     question = PAIR_QUESTIONS[int(rng.integers(len(PAIR_QUESTIONS)))]
     out = []
-    trace = build_trace(task, question)
+    recover = rng.random() < 0.4
+    style = int(rng.integers(2))
+    trace = build_trace(task, question, recover=recover, style=style)
     out.append(
         {"seed": seed, "family": "relationships", "kept": trace is not None, **(trace or {})}
     )
@@ -316,7 +440,7 @@ def _one(args: tuple[int, int, int]) -> list[dict]:
     ]
     if cats and nums and rng.random() < 0.5:
         cat, num = cats[int(rng.integers(len(cats)))], nums[int(rng.integers(len(nums)))]
-        lk = lookup_trace(task.table, cat, num)
+        lk = lookup_trace(task.table, cat, num, recover=rng.random() < 0.4)
         out.append({"seed": seed, "family": "lookup", "kept": lk is not None, **(lk or {})})
     return out
 
