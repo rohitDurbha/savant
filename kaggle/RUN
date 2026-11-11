@@ -1,1 +1,1 @@
-2026-11-11 07-eval rerun with torchao removed so peft can merge the adapters
+2026-11-11 07-eval rerun with vLLM stopped by process group so the GPUs are free between models
