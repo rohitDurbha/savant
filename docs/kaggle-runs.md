@@ -18,4 +18,4 @@ Each row below records one Kaggle run. A run starts only when `kaggle/RUN` chang
 | 2026-11-10 | 03-finetune, version 3 | Completed, adapter fell behind the base model in guided mode after learning the planted mistakes, results in results/finetune-02.json |
 | 2026-11-10 | 04-guided, version 1 | Completed, failed steps fell to 31% and date errors vanished, but two hard null tables gave many false pairs, results in results/guided-01.json |
 | 2026-11-10 | 04-guided, version 2 | Completed, no false pairs on null or hard null tables and recall 0.784, results in results/guided-02.json |
-| 2026-11-10 | 05-selfplay, version 1 | Probe of vLLM sampling on 24 development tables, measures speed and keep rate before the full run |
+| 2026-11-10 | 05-selfplay, version 1 | Completed probe, vLLM ran on both T4 cards at 745 runs per hour and kept 71 of 96 runs, results in results/selfplay-probe.json |
