@@ -259,3 +259,26 @@ Before this round, an engine-only check on 300 development tables looked at how 
 Round two sampling covered 600 new development tables with four samples each, and the 2,400 runs took one hour and fifty minutes at 1,302 runs per hour. The checks kept 1,933 runs, which is 80.5% against 74.1% in round one, and 550 of the 600 tables kept at least one run. The keep rate on planted tables rose from 68% to 76%, and the share of confirmed pairs named on those tables rose from about 80% to about 84%. Null tables kept 93% of runs and hard null tables kept 87%, both a little higher than before. Failed code steps fell from 27% to 22% of all steps, and each run finished in 85 seconds on average where round one needed 128. After the cap of two runs per table, 722 conversations remain for training, and 262 of them answer PAIR: none on a null table. The summary is in results/selfplay-round2.json.
 
 Round two training used 648 of the 722 conversations and kept the other 74, drawn from separate tables, aside to measure held-out loss. Every conversation fit inside the length limit, and two epochs took 162 optimizer steps and a little over three hours on one T4 card. Held-out loss started at 0.20 again, because the adapter always starts fresh from the base model, and it fell to 0.092, 0.082, 0.081 and 0.078 at the four saved checkpoints. These values sit well below round one, which fits targets that came from a model already closer to the task, but the second pilot also reached 0.08 while it memorized templates. For that reason the loss alone says nothing about which checkpoint is best, and the evaluation on development tables makes that choice as before. The summary is in results/train-04.json.
+
+The round two evaluation scored six models on the same 30 development tables. Every adapter named all 27 confirmed pairs there, so the choice came down to false pairs and rounds. The round two checkpoint at epoch 1.5 was the only one with no false pair, no failed step and 1.4 rounds on average, so the rule chose it. The checkpoints at epoch 0.5 and epoch 2.0 each named false pairs on null tables, which repeats the pattern of the first round where the middle of training did best.
+
+| Bench group | Measure | Base | Round one | Round two |
+| --- | --- | --- | --- | --- |
+| Seen, 30 tables | Confirmed pairs named | 83% | 89% | 87% |
+| Seen | Mean rounds | 2.77 | 2.03 | 1.57 |
+| Seen | Failed steps | 30% | 13% | 8% |
+| Seen | Null tables with a false pair | 0 of 10 | 2 of 10 | 0 of 10 |
+| Unseen, 40 tables | Confirmed pairs named | 80% | 85% | 80% |
+| Unseen | Mean rounds | 2.92 | 2.48 | 1.88 |
+| Unseen | Failed steps | 37% | 14% | 9% |
+| Unseen | Null tables with a false pair | 2 of 20 | 2 of 20 | 0 of 20 |
+| Fresh, 30 tables | Confirmed pairs named | 73% | 91% | 91% |
+| Fresh | Mean rounds | 3.10 | 2.63 | 1.87 |
+| Fresh | Failed steps | 27% | 31% | 13% |
+| Fresh | Null tables with a false pair | 0 of 20 | 1 of 20 | 0 of 20 |
+
+The round two adapter is the strongest model so far. It answered every one of the 50 null and hard null bench tables without a single false pair, it needed fewer rounds than either other model in every group, and its failed steps stayed under 15% everywhere. On the fresh tables, which no model had answered before, it named 91% of the confirmed pairs against 73% for the base model. Its one weakness is on planted tables in the unseen group, where it named the same share of confirmed pairs as the base model and added three false pairs across two tables.
+
+The round one adapter behaved differently here than in its own evaluation, even though decoding is greedy in both runs. The new hints change the message that follows a failed step, and on five null and hard null bench tables that small change led the round one adapter into false pairs. Three of those answers listed eight or more pairs at once, with as many as 33 false pairs on a single table. The round two adapter was trained on runs that already carried the new hints, so this part of the comparison favors it. It also shows that a single table can swing these averages, which is why the table above counts the null tables that drew any false pair. A mean per table would let one bad answer hide the pattern.
+
+Measured against the targets, the round two adapter keeps failed steps under 15%, answers in under two rounds on average and names no false pair on any null table, so it meets three of the four targets on every bench group. It names between 80% and 91% of the confirmed pairs, which still falls short of the 97% target, so the Phase 2 gate is not passed yet. The engine-only check showed that the prompt lists every confirmed pair, so the remaining gap is a choice the model makes, and the next change should look at which confirmed pairs it leaves out and why. The full numbers for every model are in results/eval-04.json.

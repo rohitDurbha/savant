@@ -1,0 +1,498 @@
+{
+ "dev": {
+  "base": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 2.4,
+   "failed_step_share": 0.325,
+   "planted_pairs": 31,
+   "recall": 0.839,
+   "confirmed_pairs": 27,
+   "confirmed_named": 0.963,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.048,
+   "errors": 0,
+   "seconds": 214
+  },
+  "round1-epoch-1.0": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.5,
+   "failed_step_share": 0.077,
+   "planted_pairs": 31,
+   "recall": 0.871,
+   "confirmed_pairs": 27,
+   "confirmed_named": 1.0,
+   "false_per_null_table": 2.5,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 82
+  },
+  "round2-epoch-0.5": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.4,
+   "failed_step_share": 0.0,
+   "planted_pairs": 31,
+   "recall": 0.871,
+   "confirmed_pairs": 27,
+   "confirmed_named": 1.0,
+   "false_per_null_table": 0.375,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 84
+  },
+  "round2-epoch-1.0": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.47,
+   "failed_step_share": 0.083,
+   "planted_pairs": 31,
+   "recall": 0.871,
+   "confirmed_pairs": 27,
+   "confirmed_named": 1.0,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 81
+  },
+  "round2-epoch-1.5": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.4,
+   "failed_step_share": 0.0,
+   "planted_pairs": 31,
+   "recall": 0.871,
+   "confirmed_pairs": 27,
+   "confirmed_named": 1.0,
+   "false_per_null_table": 0.0,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 95
+  },
+  "round2-epoch-2.0": {
+   "tables": 30,
+   "grounded_answers": 1.0,
+   "mean_rounds": 1.33,
+   "failed_step_share": 0.0,
+   "planted_pairs": 31,
+   "recall": 0.871,
+   "confirmed_pairs": 27,
+   "confirmed_named": 1.0,
+   "false_per_null_table": 0.875,
+   "false_per_hard_null_table": 0.0,
+   "false_per_planted_table": 0.0,
+   "errors": 0,
+   "seconds": 70
+  }
+ },
+ "bench": {
+  "base": {
+   "seen": {
+    "tables": 30,
+    "grounded_answers": 1.0,
+    "mean_rounds": 2.77,
+    "failed_step_share": 0.304,
+    "planted_pairs": 51,
+    "recall": 0.745,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.826,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.0,
+    "false_per_planted_table": 0.0,
+    "errors": 0,
+    "seconds": 198
+   },
+   "unseen": {
+    "tables": 40,
+    "grounded_answers": 1.0,
+    "mean_rounds": 2.92,
+    "failed_step_share": 0.373,
+    "planted_pairs": 48,
+    "recall": 0.771,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.804,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.6,
+    "false_per_planted_table": 0.05,
+    "errors": 0,
+    "seconds": 416
+   },
+   "fresh": {
+    "tables": 30,
+    "grounded_answers": 1.0,
+    "mean_rounds": 3.1,
+    "failed_step_share": 0.271,
+    "planted_pairs": 25,
+    "recall": 0.64,
+    "confirmed_pairs": 22,
+    "confirmed_named": 0.727,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.0,
+    "false_per_planted_table": 0.0,
+    "errors": 0,
+    "seconds": 265
+   }
+  },
+  "round1-epoch-1.0": {
+   "seen": {
+    "tables": 30,
+    "grounded_answers": 1.0,
+    "mean_rounds": 2.03,
+    "failed_step_share": 0.125,
+    "planted_pairs": 51,
+    "recall": 0.804,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.891,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 2.0,
+    "false_per_planted_table": 0.0,
+    "errors": 0,
+    "seconds": 167
+   },
+   "unseen": {
+    "tables": 40,
+    "grounded_answers": 1.0,
+    "mean_rounds": 2.48,
+    "failed_step_share": 0.14,
+    "planted_pairs": 48,
+    "recall": 0.812,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.848,
+    "false_per_null_table": 0.1,
+    "false_per_hard_null_table": 1.7,
+    "false_per_planted_table": 0.05,
+    "errors": 0,
+    "seconds": 368
+   },
+   "fresh": {
+    "tables": 30,
+    "grounded_answers": 1.0,
+    "mean_rounds": 2.63,
+    "failed_step_share": 0.311,
+    "planted_pairs": 25,
+    "recall": 0.8,
+    "confirmed_pairs": 22,
+    "confirmed_named": 0.909,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 3.3,
+    "false_per_planted_table": 0.1,
+    "errors": 0,
+    "seconds": 342
+   }
+  },
+  "round2-epoch-1.5": {
+   "seen": {
+    "tables": 30,
+    "grounded_answers": 1.0,
+    "mean_rounds": 1.57,
+    "failed_step_share": 0.083,
+    "planted_pairs": 51,
+    "recall": 0.784,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.87,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.0,
+    "false_per_planted_table": 0.0,
+    "errors": 0,
+    "seconds": 112
+   },
+   "unseen": {
+    "tables": 40,
+    "grounded_answers": 1.0,
+    "mean_rounds": 1.88,
+    "failed_step_share": 0.087,
+    "planted_pairs": 48,
+    "recall": 0.771,
+    "confirmed_pairs": 46,
+    "confirmed_named": 0.804,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.0,
+    "false_per_planted_table": 0.15,
+    "errors": 0,
+    "seconds": 178
+   },
+   "fresh": {
+    "tables": 30,
+    "grounded_answers": 1.0,
+    "mean_rounds": 1.87,
+    "failed_step_share": 0.125,
+    "planted_pairs": 25,
+    "recall": 0.8,
+    "confirmed_pairs": 22,
+    "confirmed_named": 0.909,
+    "false_per_null_table": 0.0,
+    "false_per_hard_null_table": 0.0,
+    "false_per_planted_table": 0.0,
+    "errors": 0,
+    "seconds": 91
+   }
+  }
+ },
+ "chosen": "round2-epoch-1.5",
+ "false_pair_answers": [
+  {
+   "model": "base",
+   "part": "dev",
+   "task": "plant-4500019",
+   "false": 1,
+   "rounds": 4,
+   "pairs": [
+    "price | delivery_days",
+    "basket_items | quantity (exploratory)",
+    "rating | level0 (exploratory)",
+    "segment | rating (exploratory)",
+    "region | segment (exploratory)"
+   ]
+  },
+  {
+   "model": "round1-epoch-1.0",
+   "part": "dev",
+   "task": "null-4500022",
+   "false": 20,
+   "rounds": 3,
+   "pairs": [
+    "segment | delivery_days",
+    "segment | discount",
+    "segment | price",
+    "segment | basket_items",
+    "segment | quantity",
+    "region | delivery_days",
+    "region | discount",
+    "region | price",
+    "region | basket_items",
+    "region | quantity",
+    "channel | delivery_days",
+    "channel | discount",
+    "channel | price",
+    "channel | basket_items",
+    "channel | quantity",
+    "payment_method | delivery_days",
+    "payment_method | discount",
+    "payment_method | price",
+    "payment_method | basket_items",
+    "payment_method | quantity"
+   ]
+  },
+  {
+   "model": "round2-epoch-0.5",
+   "part": "dev",
+   "task": "null-4500017",
+   "false": 2,
+   "rounds": 3,
+   "pairs": [
+    "segment | price",
+    "region | delivery_days"
+   ]
+  },
+  {
+   "model": "round2-epoch-0.5",
+   "part": "dev",
+   "task": "null-4500027",
+   "false": 1,
+   "rounds": 3,
+   "pairs": [
+    "channel | delivery_days"
+   ]
+  },
+  {
+   "model": "round2-epoch-2.0",
+   "part": "dev",
+   "task": "null-4500022",
+   "false": 7,
+   "rounds": 3,
+   "pairs": [
+    "price | discount",
+    "price | delivery_days",
+    "rating | discount",
+    "region | delivery_days",
+    "channel | delivery_days",
+    "segment | price",
+    "payment_method | discount"
+   ]
+  },
+  {
+   "model": "base",
+   "part": "unseen",
+   "task": "hard-null-011",
+   "false": 1,
+   "rounds": 3,
+   "pairs": [
+    "customer_tier | spend"
+   ]
+  },
+  {
+   "model": "base",
+   "part": "unseen",
+   "task": "hard-null-012",
+   "false": 5,
+   "rounds": 3,
+   "pairs": [
+    "spend | basket_value",
+    "spend | visits",
+    "sensor_a | score",
+    "store | spend",
+    "promo_code | spend"
+   ]
+  },
+  {
+   "model": "base",
+   "part": "unseen",
+   "task": "plant-033",
+   "false": 1,
+   "rounds": 10,
+   "pairs": [
+    "segment | group0",
+    "outcome1 | outcome1_adjusted",
+    "outcome2 | outcome2_adjusted"
+   ]
+  },
+  {
+   "model": "round1-epoch-1.0",
+   "part": "seen",
+   "task": "hard-null-004",
+   "false": 2,
+   "rounds": 3,
+   "pairs": [
+    "sensor_a | basket_value",
+    "sensor_b | spend"
+   ]
+  },
+  {
+   "model": "round1-epoch-1.0",
+   "part": "seen",
+   "task": "hard-null-003",
+   "false": 8,
+   "rounds": 3,
+   "pairs": [
+    "spend | basket_value",
+    "spend | visits",
+    "sensor_a | score",
+    "sensor_b | score",
+    "store | spend",
+    "wait_minutes | visits",
+    "sensor_a | wait_minutes",
+    "sensor_b | wait_minutes"
+   ]
+  },
+  {
+   "model": "round1-epoch-1.0",
+   "part": "unseen",
+   "task": "plant-030",
+   "false": 1,
+   "rounds": 2,
+   "pairs": [
+    "segment | group2",
+    "order_date | metric0",
+    "order_date | level1"
+   ]
+  },
+  {
+   "model": "round1-epoch-1.0",
+   "part": "unseen",
+   "task": "null-014",
+   "false": 1,
+   "rounds": 4,
+   "pairs": [
+    "segment | price",
+    "none"
+   ]
+  },
+  {
+   "model": "round1-epoch-1.0",
+   "part": "unseen",
+   "task": "hard-null-013",
+   "false": 17,
+   "rounds": 7,
+   "pairs": [
+    "sensor_a | spend",
+    "sensor_b | spend",
+    "customer_tier | spend",
+    "store | spend",
+    "visits | basket_value",
+    "wait_minutes | spend",
+    "sensor_a | basket_value",
+    "sensor_b | basket_value",
+    "visits | spend",
+    "wait_minutes | basket_value",
+    "customer_tier | visits",
+    "store | visits",
+    "promo_code | spend",
+    "store | basket_value",
+    "customer_tier | basket_value",
+    "sensor_a | wait_minutes",
+    "sensor_b | wait_minutes"
+   ]
+  },
+  {
+   "model": "round1-epoch-1.0",
+   "part": "fresh",
+   "task": "plant-045",
+   "false": 1,
+   "rounds": 2,
+   "pairs": [
+    "segment | group0",
+    "outcome1 | outcome1_adjusted",
+    "outcome2 | outcome2_adjusted"
+   ]
+  },
+  {
+   "model": "round1-epoch-1.0",
+   "part": "fresh",
+   "task": "hard-null-021",
+   "false": 33,
+   "rounds": 8,
+   "pairs": [
+    "spend | basket_value",
+    "spend | visits",
+    "sensor_a | sensor_b",
+    "customer_tier | spend",
+    "store | spend",
+    "promo_code | spend",
+    "wait_minutes | basket_value",
+    "sensor_a | wait_minutes",
+    "sensor_b | wait_minutes",
+    "score | spend",
+    "score | basket_value",
+    "score | visits",
+    "score | wait_minutes",
+    "customer_tier | basket_value",
+    "store | basket_value",
+    "promo_code | basket_value",
+    "customer_tier | visits",
+    "store | visits",
+    "promo_code | visits",
+    "customer_tier | wait_minutes",
+    "store | wait_"
+   ]
+  },
+  {
+   "model": "round2-epoch-1.5",
+   "part": "unseen",
+   "task": "plant-020",
+   "false": 1,
+   "rounds": 2,
+   "pairs": [
+    "segment | score0",
+    "order_date | level1"
+   ]
+  },
+  {
+   "model": "round2-epoch-1.5",
+   "part": "unseen",
+   "task": "plant-021",
+   "false": 2,
+   "rounds": 2,
+   "pairs": [
+    "segment | group2",
+    "segment | group1",
+    "signal_x0 | signal_y0"
+   ]
+  }
+ ]
+}
